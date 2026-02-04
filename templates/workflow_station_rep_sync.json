@@ -1,0 +1,508 @@
+{
+  "name": "{{WORKFLOW_NAMES_STATION_REP_SYNC}}",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 2
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Daily 2AM Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Initialize sync state\nconst now = new Date().toISOString();\n\nreturn [{\n  json: {\n    sync_id: `sync_${Date.now()}`,\n    started_at: now,\n    after: '',\n    records_processed: 0,\n    records_created: 0,\n    records_updated: 0,\n    records_failed: 0,\n    errors: [],\n    all_mappings: []\n  }\n}];"
+      },
+      "id": "init-sync",
+      "name": "Initialize Sync",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [250, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/{{HUBSPOT_STATION_CODES_OBJECT_TYPE}}/search",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"limit\": 100,\n  \"after\": \"{{ $json.after || '' }}\",\n  \"properties\": [\n    \"hs_object_id\",\n    \"name\",\n    \"station_code_status\",\n    \"facility_type\",\n    \"billing_id\"\n  ]\n}",
+        "options": {}
+      },
+      "id": "fetch-stations",
+      "name": "Fetch Station Codes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 100],
+      "credentials": {
+        "hubspotApi": {
+          "id": "{{CREDENTIALS_HUBSPOT}}",
+          "name": "{{CREDENTIALS_HUBSPOT}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract station records and pagination info\nconst input = $input.first().json;\nconst results = input.results || [];\nconst paging = input.paging;\n\n// Get state from previous iteration\nconst state = $('Initialize Sync').first().json;\n\nconst stations = results.map(r => ({\n  hubspot_station_id: r.id,\n  station_code: r.properties.name || r.properties.hs_object_id,\n  station_status: r.properties.station_code_status || 'Active',\n  facility_type: r.properties.facility_type || '',\n  billing_id: r.properties.billing_id || ''\n}));\n\nreturn [{\n  json: {\n    ...state,\n    stations,\n    has_more: !!paging?.next?.after,\n    next_after: paging?.next?.after || ''\n  }\n}];"
+      },
+      "id": "parse-stations",
+      "name": "Parse Station Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [750, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Explode stations into individual items for association lookup\nconst input = $input.first().json;\nconst stations = input.stations || [];\n\nreturn stations.map(station => ({\n  json: {\n    ...station,\n    sync_state: {\n      sync_id: input.sync_id,\n      has_more: input.has_more,\n      next_after: input.next_after\n    }\n  }\n}));"
+      },
+      "id": "explode-stations",
+      "name": "Explode Stations",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 100]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.hubapi.com/crm/v4/objects/{{HUBSPOT_STATION_CODES_OBJECT_TYPE}}/{{ $json.hubspot_station_id }}/associations/contacts",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotApi",
+        "options": {}
+      },
+      "id": "fetch-associations",
+      "name": "Fetch Contact Associations",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1250, 100],
+      "credentials": {
+        "hubspotApi": {
+          "id": "{{CREDENTIALS_HUBSPOT}}",
+          "name": "{{CREDENTIALS_HUBSPOT}}"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter for Member Representative association label\nconst station = $input.first().json;\nconst associations = station.results || [];\n\n// HubSpot association labels - filter for \"Member Representative\"\n// The label ID varies by portal, so we check the label text\nconst memberRepAssociations = associations.filter(assoc => {\n  const types = assoc.associationTypes || [];\n  return types.some(t => \n    t.label?.toLowerCase().includes('member representative') ||\n    t.typeId === 1 // Default contact association if no custom label\n  );\n});\n\n// Get contact IDs\nconst contactIds = memberRepAssociations.map(a => a.toObjectId);\n\nreturn [{\n  json: {\n    station_code: station.station_code,\n    hubspot_station_id: station.hubspot_station_id,\n    station_status: station.station_status,\n    facility_type: station.facility_type,\n    contact_ids: contactIds,\n    sync_state: station.sync_state\n  }\n}];"
+      },
+      "id": "filter-member-reps",
+      "name": "Filter Member Reps",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1500, 100]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-contacts",
+              "leftValue": "={{ $json.contact_ids.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-has-contacts",
+      "name": "Has Contacts?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1750, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/contacts/batch/read",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"inputs\": {{ JSON.stringify($json.contact_ids.map(id => ({ id }))) }},\n  \"properties\": [\"email\", \"firstname\", \"lastname\", \"phone\"]\n}",
+        "options": {}
+      },
+      "id": "fetch-contacts",
+      "name": "Fetch Contact Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 0],
+      "credentials": {
+        "hubspotApi": {
+          "id": "{{CREDENTIALS_HUBSPOT}}",
+          "name": "{{CREDENTIALS_HUBSPOT}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build mapping record from station + contacts\nconst station = $('Filter Member Reps').first().json;\nconst contactsResponse = $input.first().json;\nconst contacts = contactsResponse.results || [];\n\nif (contacts.length === 0) {\n  return [{\n    json: {\n      station_code: station.station_code,\n      hubspot_station_id: station.hubspot_station_id,\n      station_status: station.station_status,\n      facility_type: station.facility_type,\n      rep_email: null,\n      rep_name: null,\n      rep_phone: null,\n      hubspot_contact_id: null,\n      additional_reps: [],\n      has_rep: false,\n      sync_state: station.sync_state\n    }\n  }];\n}\n\n// Primary rep is first contact\nconst primary = contacts[0];\nconst additional = contacts.slice(1).map(c => ({\n  email: c.properties.email,\n  name: `${c.properties.firstname || ''} ${c.properties.lastname || ''}`.trim(),\n  phone: c.properties.phone,\n  hubspot_id: c.id\n}));\n\nreturn [{\n  json: {\n    station_code: station.station_code,\n    hubspot_station_id: station.hubspot_station_id,\n    station_status: station.station_status,\n    facility_type: station.facility_type,\n    rep_email: primary.properties.email,\n    rep_name: `${primary.properties.firstname || ''} ${primary.properties.lastname || ''}`.trim(),\n    rep_phone: primary.properties.phone,\n    hubspot_contact_id: primary.id,\n    additional_reps: additional,\n    has_rep: !!primary.properties.email,\n    sync_state: station.sync_state\n  }\n}];"
+      },
+      "id": "build-mapping",
+      "name": "Build Mapping Record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2250, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// No contacts found - create placeholder mapping\nconst station = $input.first().json;\n\nreturn [{\n  json: {\n    station_code: station.station_code,\n    hubspot_station_id: station.hubspot_station_id,\n    station_status: station.station_status,\n    facility_type: station.facility_type,\n    rep_email: null,\n    rep_name: null,\n    rep_phone: null,\n    hubspot_contact_id: null,\n    additional_reps: [],\n    has_rep: false,\n    sync_state: station.sync_state\n  }\n}];"
+      },
+      "id": "no-rep-mapping",
+      "name": "No Rep Mapping",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 200]
+    },
+    {
+      "parameters": {},
+      "id": "merge-mappings",
+      "name": "Merge Mappings",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [2500, 100]
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "table": "station_rep_mapping",
+        "columnToMatchOn": "station_code",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "station_code": "={{ $json.station_code }}",
+            "rep_email": "={{ $json.rep_email }}",
+            "rep_name": "={{ $json.rep_name }}",
+            "rep_phone": "={{ $json.rep_phone }}",
+            "facility_type": "={{ $json.facility_type }}",
+            "station_status": "={{ $json.station_status }}",
+            "hubspot_station_id": "={{ $json.hubspot_station_id }}",
+            "hubspot_contact_id": "={{ $json.hubspot_contact_id }}",
+            "additional_reps": "={{ JSON.stringify($json.additional_reps) }}",
+            "last_synced_at": "={{ new Date().toISOString() }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "upsert-postgres",
+      "name": "Upsert to Postgres",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [2750, 0],
+      "credentials": {
+        "postgres": {
+          "id": "{{CREDENTIALS_POSTGRES}}",
+          "name": "{{CREDENTIALS_POSTGRES}}"
+        }
+      },
+      "disabled": true,
+      "notes": "Enable this node and disable 'Upsert to Sheets' for Postgres mode"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{STORAGE_SHEETS_SPREADSHEET_ID}}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{STORAGE_SHEETS_MAPPING_SHEET}}"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": ["station_code"],
+          "schema": [
+            {"id": "station_code", "displayName": "station_code", "required": true, "defaultMatch": true},
+            {"id": "rep_email", "displayName": "rep_email"},
+            {"id": "rep_name", "displayName": "rep_name"},
+            {"id": "rep_phone", "displayName": "rep_phone"},
+            {"id": "facility_type", "displayName": "facility_type"},
+            {"id": "station_status", "displayName": "station_status"},
+            {"id": "hubspot_station_id", "displayName": "hubspot_station_id"},
+            {"id": "hubspot_contact_id", "displayName": "hubspot_contact_id"},
+            {"id": "additional_reps", "displayName": "additional_reps"},
+            {"id": "last_synced_at", "displayName": "last_synced_at"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "upsert-sheets",
+      "name": "Upsert to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2750, 200],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "{{CREDENTIALS_GOOGLE_SHEETS}}",
+          "name": "{{CREDENTIALS_GOOGLE_SHEETS}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate results and check for more pages\nconst items = $input.all();\nconst syncState = items[0]?.json?.sync_state || {};\n\nlet created = 0;\nlet updated = 0;\nlet failed = 0;\nconst errors = [];\n\nfor (const item of items) {\n  // Count results based on operation outcome\n  if (item.json.has_rep) {\n    updated++;\n  } else {\n    // Station without rep - still tracked\n    updated++;\n  }\n}\n\nreturn [{\n  json: {\n    sync_id: syncState.sync_id,\n    batch_processed: items.length,\n    batch_created: created,\n    batch_updated: updated,\n    batch_failed: failed,\n    errors: errors,\n    has_more: syncState.has_more,\n    next_after: syncState.next_after\n  }\n}];"
+      },
+      "id": "aggregate-batch",
+      "name": "Aggregate Batch Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3000, 100]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-more",
+              "leftValue": "={{ $json.has_more }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-has-more",
+      "name": "More Pages?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3250, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare for next page\nconst input = $input.first().json;\n\nreturn [{\n  json: {\n    sync_id: input.sync_id,\n    after: input.next_after,\n    records_processed: input.batch_processed,\n    records_created: input.batch_created,\n    records_updated: input.batch_updated,\n    records_failed: input.batch_failed,\n    errors: input.errors\n  }\n}];"
+      },
+      "id": "prepare-next-page",
+      "name": "Prepare Next Page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3500, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Final sync summary\nconst input = $input.first().json;\nconst now = new Date().toISOString();\n\nreturn [{\n  json: {\n    sync_id: input.sync_id,\n    status: 'completed',\n    records_processed: input.batch_processed,\n    records_created: input.batch_created,\n    records_updated: input.batch_updated,\n    records_failed: input.batch_failed,\n    errors: input.errors,\n    completed_at: now\n  }\n}];"
+      },
+      "id": "finalize-sync",
+      "name": "Finalize Sync",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3500, 200]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "sync_log",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sync_type": "station_rep",
+            "status": "={{ $json.status }}",
+            "records_processed": "={{ $json.records_processed }}",
+            "records_created": "={{ $json.records_created }}",
+            "records_updated": "={{ $json.records_updated }}",
+            "records_failed": "={{ $json.records_failed }}",
+            "error_details": "={{ JSON.stringify($json.errors) }}",
+            "completed_at": "={{ $json.completed_at }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "log-sync-postgres",
+      "name": "Log Sync (Postgres)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [3750, 100],
+      "credentials": {
+        "postgres": {
+          "id": "{{CREDENTIALS_POSTGRES}}",
+          "name": "{{CREDENTIALS_POSTGRES}}"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{STORAGE_SHEETS_SPREADSHEET_ID}}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "sync_log"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "log-sync-sheets",
+      "name": "Log Sync (Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [3750, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "{{CREDENTIALS_GOOGLE_SHEETS}}",
+          "name": "{{CREDENTIALS_GOOGLE_SHEETS}}"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily 2AM Trigger": {
+      "main": [
+        [{"node": "Initialize Sync", "type": "main", "index": 0}]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [{"node": "Initialize Sync", "type": "main", "index": 0}]
+      ]
+    },
+    "Initialize Sync": {
+      "main": [
+        [{"node": "Fetch Station Codes", "type": "main", "index": 0}]
+      ]
+    },
+    "Fetch Station Codes": {
+      "main": [
+        [{"node": "Parse Station Results", "type": "main", "index": 0}]
+      ]
+    },
+    "Parse Station Results": {
+      "main": [
+        [{"node": "Explode Stations", "type": "main", "index": 0}]
+      ]
+    },
+    "Explode Stations": {
+      "main": [
+        [{"node": "Fetch Contact Associations", "type": "main", "index": 0}]
+      ]
+    },
+    "Fetch Contact Associations": {
+      "main": [
+        [{"node": "Filter Member Reps", "type": "main", "index": 0}]
+      ]
+    },
+    "Filter Member Reps": {
+      "main": [
+        [{"node": "Has Contacts?", "type": "main", "index": 0}]
+      ]
+    },
+    "Has Contacts?": {
+      "main": [
+        [{"node": "Fetch Contact Details", "type": "main", "index": 0}],
+        [{"node": "No Rep Mapping", "type": "main", "index": 0}]
+      ]
+    },
+    "Fetch Contact Details": {
+      "main": [
+        [{"node": "Build Mapping Record", "type": "main", "index": 0}]
+      ]
+    },
+    "Build Mapping Record": {
+      "main": [
+        [{"node": "Merge Mappings", "type": "main", "index": 0}]
+      ]
+    },
+    "No Rep Mapping": {
+      "main": [
+        [{"node": "Merge Mappings", "type": "main", "index": 1}]
+      ]
+    },
+    "Merge Mappings": {
+      "main": [
+        [
+          {"node": "Upsert to Postgres", "type": "main", "index": 0},
+          {"node": "Upsert to Sheets", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Upsert to Postgres": {
+      "main": [
+        [{"node": "Aggregate Batch Results", "type": "main", "index": 0}]
+      ]
+    },
+    "Upsert to Sheets": {
+      "main": [
+        [{"node": "Aggregate Batch Results", "type": "main", "index": 0}]
+      ]
+    },
+    "Aggregate Batch Results": {
+      "main": [
+        [{"node": "More Pages?", "type": "main", "index": 0}]
+      ]
+    },
+    "More Pages?": {
+      "main": [
+        [{"node": "Prepare Next Page", "type": "main", "index": 0}],
+        [{"node": "Finalize Sync", "type": "main", "index": 0}]
+      ]
+    },
+    "Prepare Next Page": {
+      "main": [
+        [{"node": "Fetch Station Codes", "type": "main", "index": 0}]
+      ]
+    },
+    "Finalize Sync": {
+      "main": [
+        [
+          {"node": "Log Sync (Postgres)", "type": "main", "index": 0},
+          {"node": "Log Sync (Sheets)", "type": "main", "index": 0}
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  },
+  "staticData": null,
+  "tags": [],
+  "pinData": {}
+}

@@ -1,0 +1,79 @@
+{
+  "name": "EPR Compliance Escalation (TEST)",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "EPR Escalation Test",
+        "formDescription": "Enter test data to simulate EPR compliance check",
+        "formFields": {
+          "values": [
+            {"fieldLabel": "Member Name", "fieldType": "text", "requiredField": true, "placeholder": "Acme Water District"},
+            {"fieldLabel": "Contact First Name", "fieldType": "text", "requiredField": true, "placeholder": "John"},
+            {"fieldLabel": "Contact Email", "fieldType": "text", "requiredField": true, "placeholder": "john@acmewater.org"},
+            {"fieldLabel": "Station Code", "fieldType": "text", "placeholder": "ACMWTR"},
+            {"fieldLabel": "Tickets Received", "fieldType": "number", "requiredField": true, "placeholder": "47"},
+            {"fieldLabel": "EPR Posted", "fieldType": "number", "requiredField": true, "placeholder": "39"},
+            {"fieldLabel": "Compliance Threshold %", "fieldType": "number", "requiredField": true, "placeholder": "90"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "test-form",
+      "name": "Test Input Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [0, 300],
+      "webhookId": "epr-test-form"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst memberName = input['Member Name'] || '';\nconst firstName = input['Contact First Name'] || '';\nconst email = input['Contact Email'] || '';\nconst stationCode = input['Station Code'] || '';\nconst ticketsReceived = parseInt(input['Tickets Received'] || '0', 10);\nconst eprPosted = parseInt(input['EPR Posted'] || '0', 10);\nconst threshold = parseInt(input['Compliance Threshold %'] || '90', 10);\n\nconst responseRate = ticketsReceived > 0 ? Math.round((eprPosted / ticketsReceived) * 100) : 100;\nconst isCompliant = responseRate >= threshold;\n\nreturn [{\n  json: {\n    member_name: memberName,\n    first_name: firstName,\n    email: email,\n    station_code: stationCode,\n    tickets_received: ticketsReceived,\n    epr_posted: eprPosted,\n    response_rate: responseRate,\n    threshold: threshold,\n    is_compliant: isCompliant,\n    below_threshold_by: isCompliant ? 0 : threshold - responseRate\n  }\n}];"
+      },
+      "id": "parse-input",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [{"id": "below-threshold", "leftValue": "={{ $json.is_compliant }}", "rightValue": false, "operator": {"type": "boolean", "operation": "equals"}}],
+          "combinator": "and"
+        }
+      },
+      "id": "check-compliance",
+      "name": "Below Threshold?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\n// HTML Signature - Your Outlook signature\nconst LOGO_URL = 'https://i.imgur.com/v6diEdK.jpg';\nconst BANNER_URL = 'https://i.imgur.com/HfkbUwp.png';\nconst CALENDLY_LINK = 'https://calendly.com/christian-olesen-usan/30min';\n\nconst SIGNATURE_HTML = `\n<p style=\"font-family: Aptos, sans-serif; font-size: 12pt;\">Thank you,</p>\n<br>\n<table cellspacing=\"0\" cellpadding=\"0\" style=\"border-collapse: collapse;\">\n  <tr>\n    <td style=\"padding-right: 15px; vertical-align: top; border-right: 1.5pt solid #000;\">\n      <img src=\"${LOGO_URL}\" alt=\"USAN 811\" width=\"175\" style=\"max-width: 175px;\">\n    </td>\n    <td style=\"padding-left: 15px; vertical-align: top;\">\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><b>Christian Olesen</b></p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">Member Services Specialist</p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">REDACTED_PHONE</p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><a href=\"http://www.undergroundservicealert.org/\" style=\"color: #0563c1;\">undergroundservicealert.org</a></p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">4005 Port Chicago Hwy #100 Concord, CA 94520</p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><a href=\"${CALENDLY_LINK}\" style=\"color: #4c94d8;\"><b>Christian's Availability</b></a></p>\n    </td>\n  </tr>\n</table>\n<br>\n<a href=\"https://www.undergroundservicealert.org/damage-prevention-portal/\"><img src=\"${BANNER_URL}\" alt=\"NEW Damage Prevention Portal\" width=\"450\" style=\"max-width: 450px;\"></a>\n<br><br>\n<p style=\"font-size: 9pt; color: #666; font-family: Aptos, sans-serif;\">This message contains confidential information and is intended only for the intended recipients. If you are not an intended recipient you should not disseminate, distribute or copy this e-mail. Please notify us immediately by e-mail if you have received this e-mail by mistake and delete this e-mail from your system.</p>\n`;\n\n// Build personalized email body\nconst emailBody = `\n<!DOCTYPE html>\n<html>\n<head><meta charset=\"utf-8\"></head>\n<body style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n<strong>${data.first_name}</strong>,\n</p>\n\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt; background-color: #FFFF00; padding: 5px; display: inline-block;\">\n<strong>Your current EPR response rate: ${data.response_rate}%</strong> (${data.epr_posted} of ${data.tickets_received} tickets)\n</p>\n\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nJust reaching out because Electronic Positive Responses are still not being posted on the tickets that <strong>${data.member_name}</strong> is receiving.\n</p>\n\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt; margin: 15px 0; padding: 10px; border-left: 3px solid #ccc; background: #f9f9f9;\">\n<em>4216.3.(c) (1) (A) Every operator shall supply an electronic positive response through the regional notification center before the legal excavation start date and time.</em> — <a href=\"https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?lawCode=GOV&division=5.&title=1.&part=&chapter=3.1.&article=2\">California Government Code 4216</a>\n</p>\n\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nTo be in compliance you will need to post EPR on all tickets that you have received. By being out of compliance, <strong>mandatory training and/or fines can be imposed by the Underground Safety Board</strong>.\n</p>\n\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nTo post EPR on the tickets that you receive please login to the Damage Prevention Portal and follow the instructions in our video:\n</p>\n<ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n  <li><strong>CA DPP Login:</strong> <a href=\"https://appsca.undergroundservicealert.org/pcadmin/Account/Login\">https://appsca.undergroundservicealert.org/pcadmin/Account/Login</a></li>\n  <li><strong>How to use Electronic Positive Response:</strong> <a href=\"https://www.youtube.com/watch?v=c1b6HlX-fx4\">https://www.youtube.com/watch?v=c1b6HlX-fx4</a></li>\n</ul>\n\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nIf you would like to schedule a meeting with me, here is my availability: <a href=\"${CALENDLY_LINK}\"><strong>Schedule a Meeting</strong></a>\n</p>\n\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nPlease let me know if you have any questions.\n</p>\n\n${SIGNATURE_HTML}\n\n</body>\n</html>\n`;\n\nconst subject = `${data.first_name}, EPR Compliance - Action Required (${data.response_rate}%)`;\n\nreturn [{\n  json: {\n    status: 'EMAIL PREVIEW - NON-COMPLIANT',\n    to: data.email,\n    to_name: data.first_name,\n    subject: subject,\n    body: emailBody,\n    compliance_data: {\n      member_name: data.member_name,\n      station_code: data.station_code,\n      response_rate: data.response_rate + '%',\n      tickets_received: data.tickets_received,\n      epr_posted: data.epr_posted,\n      threshold: data.threshold + '%',\n      below_by: data.below_threshold_by + '%'\n    }\n  }\n}];"
+      },
+      "id": "build-email",
+      "name": "Build Email Preview",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [750, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nreturn [{\n  json: {\n    status: 'COMPLIANT - NO EMAIL NEEDED',\n    member_name: data.member_name,\n    email: data.email,\n    response_rate: data.response_rate + '%',\n    threshold: data.threshold + '%',\n    message: `${data.member_name} is at ${data.response_rate}% compliance, which meets or exceeds the ${data.threshold}% threshold.`\n  }\n}];"
+      },
+      "id": "compliant-output",
+      "name": "Compliant Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [750, 400]
+    }
+  ],
+  "connections": {
+    "Test Input Form": {"main": [[{"node": "Parse Input", "type": "main", "index": 0}]]},
+    "Parse Input": {"main": [[{"node": "Below Threshold?", "type": "main", "index": 0}]]},
+    "Below Threshold?": {"main": [[{"node": "Build Email Preview", "type": "main", "index": 0}], [{"node": "Compliant Output", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1", "saveManualExecutions": true, "saveExecutionProgress": true}
+}

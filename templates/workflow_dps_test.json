@@ -1,0 +1,207 @@
+{
+  "name": "DPS - Email Processor (TEST)",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "DPS Alert Test Input",
+        "formDescription": "Enter test data to simulate a DPS alert email",
+        "formFields": {
+          "values": [
+            {"fieldLabel": "Alert ID", "fieldType": "text", "requiredField": true, "placeholder": "17191747"},
+            {"fieldLabel": "Ticket Number", "fieldType": "text", "requiredField": true, "placeholder": "2026011403358"},
+            {"fieldLabel": "Station Code(s)", "fieldType": "text", "requiredField": true, "placeholder": "VACSTR, PGECO"},
+            {"fieldLabel": "State", "fieldType": "dropdown", "requiredField": true, "fieldOptions": {"values": [{"option": "California"}, {"option": "Nevada"}]}},
+            {"fieldLabel": "Issue Type", "fieldType": "dropdown", "requiredField": true, "fieldOptions": {"values": [{"option": "No Response"}, {"option": "Member Manually Added to Ticket"}, {"option": "Contact Info Issue"}, {"option": "General"}]}},
+            {"fieldLabel": "Customer Name", "fieldType": "text", "placeholder": "John Smith"},
+            {"fieldLabel": "Additional Notes", "fieldType": "textarea", "placeholder": "Caller concerned over storm drain"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "manual-trigger",
+      "name": "Test Input Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [0, 300],
+      "webhookId": "dps-test-form"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst parsed = {\n  alert_id: input['Alert ID'] || `test_${Date.now()}`,\n  ticket_number: input['Ticket Number'] || '',\n  member_codes_raw: input['Station Code(s)'] || '',\n  issue_type: input['Issue Type'] || '',\n  states_raw: input['State'] || '',\n  customer_name: input['Customer Name'] || '',\n  notes: input['Additional Notes'] || '',\n  source: 'manual_test',\n  received_at: new Date().toISOString(),\n  email_message_id: `test_${Date.now()}`,\n  original_subject: `DPS - Department Alert System Result #${input['Alert ID']}`,\n  original_body: 'Test input - no original email body'\n};\n\nparsed.member_codes = parsed.member_codes_raw ? parsed.member_codes_raw.split(/[,;\\/\\s]+/).map(c => c.trim().toUpperCase()).filter(c => c.length > 0 && /^[A-Z0-9]+$/.test(c)) : [];\nparsed.states = parsed.states_raw ? [parsed.states_raw] : [];\n\nconst normalizedCodes = (parsed.member_codes || []).slice().sort().join(',');\nconst keySource = `${parsed.alert_id}|${parsed.ticket_number}|${normalizedCodes}`;\nparsed.idempotency_key = keySource.split('').reduce((a,b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0).toString(16);\nparsed.notes_preview = (parsed.notes || '').substring(0, 200);\n\nreturn [{ json: parsed }];"
+      },
+      "id": "parse-input",
+      "name": "Parse Test Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [{"id": "has-codes", "leftValue": "={{ $json.member_codes.length }}", "rightValue": 0, "operator": {"type": "number", "operation": "gt"}}],
+          "combinator": "and"
+        }
+      },
+      "id": "has-codes",
+      "name": "Has Codes?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const parsed = $input.first().json;\nreturn [{ json: { ...parsed, exception: true, exception_type: 'missing_station_code', exception_reason: 'No station code provided' } }];"
+      },
+      "id": "no-codes-exception",
+      "name": "No Codes Exception",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [750, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "const parsed = $input.first().json;\nreturn parsed.member_codes.map(code => ({ json: { station_code: code, root: parsed } }));"
+      },
+      "id": "explode-codes",
+      "name": "Explode Codes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [750, 200]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {"__rl": true, "mode": "id", "value": "19IIMKYbgkij4Q2PeDx8mpKzf_Q3pyhVzmy0xsb8hmXA"},
+        "sheetName": {"__rl": true, "mode": "name", "value": "station_rep_mapping"},
+        "filtersUI": {"values": [{"lookupColumn": "station_code", "lookupValue": "={{ $json.station_code }}"}]}
+      },
+      "id": "lookup-sheets",
+      "name": "Lookup Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1000, 200],
+      "credentials": {
+        "googleSheetsOAuth2Api": {"id": "google_sheets", "name": "google_sheets"}
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst explodedItems = $('Explode Codes').all();\nconst results = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const lookup = items[i].json;\n  const exploded = explodedItems[i]?.json || explodedItems[0].json;\n  const stationCode = exploded.station_code;\n  const root = exploded.root;\n  const hasResult = lookup && lookup.rep_email;\n  \n  results.push({\n    json: {\n      station_code: stationCode,\n      found: hasResult,\n      rep_email: lookup?.rep_email || null,\n      rep_name: lookup?.rep_name || null,\n      root: root\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "process-lookup",
+      "name": "Process Lookup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst root = items[0].json.root;\nconst repMap = new Map();\nconst matchedCodes = [];\nconst unmatchedCodes = [];\n\nfor (const item of items) {\n  const code = item.json.station_code;\n  if (item.json.found && item.json.rep_email) {\n    matchedCodes.push(code);\n    const emailKey = item.json.rep_email.toLowerCase();\n    if (!repMap.has(emailKey)) {\n      repMap.set(emailKey, { rep_email: item.json.rep_email, rep_name: item.json.rep_name || 'Member Rep', station_codes: [] });\n    }\n    repMap.get(emailKey).station_codes.push(code);\n  } else {\n    unmatchedCodes.push(code);\n  }\n}\n\nconst recipients = Array.from(repMap.values());\n\nreturn [{\n  json: {\n    ...root,\n    routing: {\n      recipients,\n      matched_codes: matchedCodes,\n      unmatched_codes: unmatchedCodes,\n      has_exceptions: unmatchedCodes.length > 0,\n      all_unmatched: recipients.length === 0\n    }\n  }\n}];"
+      },
+      "id": "aggregate-recipients",
+      "name": "Aggregate Recipients",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1500, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst notes = (data.notes || '').toLowerCase();\nconst issueType = (data.issue_type || '').toLowerCase();\nconst states = (data.states || []).map(s => s.toLowerCase());\nconst isCA = states.some(s => s.includes('california') || s === 'ca');\nconst isNV = states.some(s => s.includes('nevada') || s === 'nv');\nconst isNoResponse = issueType.includes('no response') || notes.includes('no response') || notes.includes('non-response');\nconst isManuallyAdded = issueType.includes('manually added') || issueType.includes('manual add');\nconst isContactIssue = notes.includes('contact') || notes.includes('wrong number') || notes.includes('wrong email') || issueType.includes('contact');\n\nconst templates = [\n  {\n    id: 'no_response_ca',\n    match: () => isCA && isNoResponse,\n    subject: 'No Response Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the form below and reach out to the customer listed to resolve the issue.\\n\\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP) as required by California Code 4216 (https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?lawCode=GOV&division=5.&title=1.&part=&chapter=3.1.&article=2).\\n\\n• How to use Electronic Positive Response - https://www.youtube.com/watch?v=c1b6HlX-fx4\\n\\nThank you,'\n  },\n  {\n    id: 'no_response_nv',\n    match: () => isNV && isNoResponse,\n    subject: 'No Response Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the form below and reach out to the customer listed to resolve the issue.\\n\\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP) as required by NRS 455.\\n\\n• How to use Electronic Positive Response - https://www.youtube.com/watch?v=c1b6HlX-fx4\\n\\nThank you,'\n  },\n  {\n    id: 'no_response_generic',\n    match: () => isNoResponse,\n    subject: 'No Response Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the form below and reach out to the customer listed to resolve the issue.\\n\\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP).\\n\\n• How to use Electronic Positive Response - https://www.youtube.com/watch?v=c1b6HlX-fx4\\n\\nThank you,'\n  },\n  {\n    id: 'contact_info_issue',\n    match: () => isContactIssue,\n    subject: 'Contact Info Issue: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the email below from one of our agents for reference and reach out to the excavator on the ticket to resolve the issue.\\n\\nIf you need to update your Member Contact information within the Damage Prevention Portal, please use the link below to sign in. Then navigate to the station details for your station code (Settings > OneCallAccess).\\n\\nNV DPP Login Page - https://appsnv.undergroundservicealert.org/pcadmin/Account/Login\\nCA DPP Login Page - https://appsca.undergroundservicealert.org/pcadmin/Account/Login?returnUrl=%2Fpcadmin%2FOperations - The Damage Prevention Portal is where you can manage your mapping, contact info, and ticket delivery.\\n\\nContact Information can be found under Settings - OneCallAccess then clicking on your Station Code.\\nThe Member Contact is displayed on each ticket available for the excavator.\\nThe Member IT contact is not displayed on the ticket and is meant for the Member Rep.\\n\\nPlease let me know if you have any questions.\\n\\nThank you,'\n  },\n  {\n    id: 'member_manually_added',\n    match: () => isManuallyAdded,\n    subject: 'Manual Add Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: 'Hello {{rep_name}},\\n\\nPlease review the email below from one of our agents for reference. The station code {{station_codes}} has been manually added to ticket# {{ticket_number}} at the request of the excavator.\\n\\nIf you need to update your Area of Interest, please visit the Damage Prevention Portal using the link below.\\n\\nCA DPP Login Page - https://appsca.undergroundservicealert.org/pcadmin/Account/Login?returnUrl=%2Fpcadmin%2FOperations - The Damage Prevention Portal is where you can manage your mapping, contact info, and ticket delivery.\\n\\nArea of Interest (AOI) can be found under Settings - OneCallAccess and clicking on your Station Code, then clicking on Area of Interest.\\nHere is a video that goes into more detail: How to manage your Area of Interest - https://www.youtube.com/watch?v=KZzHnITi-3Q&feature=youtu.be\\n\\nThank you,'\n  },\n  {\n    id: 'general',\n    match: () => true,\n    subject: 'DPS Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the form below and take appropriate action.\\n\\nTicket Number: {{ticket_number}}\\nStation Code(s): {{station_codes}}\\nState(s): {{states}}\\nIssue Type: {{issue_type}}\\n\\nAdditional Notes:\\n{{notes}}\\n\\nThank you,'\n  }\n];\n\nconst template = templates.find(t => t.match());\n\nreturn [{\n  json: {\n    ...data,\n    template: {\n      id: template.id,\n      subject_template: template.subject,\n      body_template: template.body\n    }\n  }\n}];"
+      },
+      "id": "select-template",
+      "name": "Select Template",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1750, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [{"id": "has-recipients", "leftValue": "={{ $json.routing.recipients.length }}", "rightValue": 0, "operator": {"type": "number", "operation": "gt"}}],
+          "combinator": "and"
+        }
+      },
+      "id": "has-recipients",
+      "name": "Has Recipients?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2000, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nreturn [{\n  json: {\n    status: 'EXCEPTION - ALL CODES UNMATCHED',\n    exception_type: 'unknown_station_code',\n    exception_reason: `Unknown station code(s): ${data.routing.unmatched_codes.join(', ')}`,\n    input_data: {\n      alert_id: data.alert_id,\n      ticket_number: data.ticket_number,\n      station_codes: data.member_codes,\n      state: data.states\n    }\n  }\n}];"
+      },
+      "id": "all-unmatched-exception",
+      "name": "All Unmatched Exception",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2250, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst recipients = data.routing.recipients;\n\nreturn recipients.map(recipient => ({\n  json: {\n    ...data,\n    current_recipient: recipient,\n    station_codes_for_recipient: recipient.station_codes.join(', ')\n  }\n}));"
+      },
+      "id": "explode-recipients",
+      "name": "Explode Recipients",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2250, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst template = data.template;\nconst recipient = data.current_recipient;\n\nconst CC_RECIPIENTS = [\n  'trevor.harris@usan.org',\n  'centeroperations@usanorth811.org',\n  'germain.suess@usan.org'\n];\n\nconst SIGNATURE = `\\n\\nChristian Olesen\\nMember Services Representative\\nUSAN - Underground Service Alert Network\\nmemberservices@usan.org`;\n\nfunction render(tmpl, vars) {\n  let result = tmpl;\n  for (const [key, value] of Object.entries(vars)) {\n    result = result.replace(new RegExp(`\\\\{\\\\{${key}\\\\}\\\\}`, 'g'), value || '');\n  }\n  return result;\n}\n\nconst vars = {\n  rep_name: recipient.rep_name,\n  rep_email: recipient.rep_email,\n  ticket_number: data.ticket_number,\n  station_codes: recipient.station_codes.join(', '),\n  all_station_codes: data.member_codes.join(', '),\n  states: data.states.join(', '),\n  notes: data.notes,\n  customer_name: data.customer_name,\n  alert_id: data.alert_id,\n  issue_type: data.issue_type\n};\n\nconst renderedBody = render(template.body_template, vars) + SIGNATURE;\n\nreturn [{\n  json: {\n    email_number: $itemIndex + 1,\n    status: 'DRAFT EMAIL PREVIEW',\n    to: recipient.rep_email,\n    to_name: recipient.rep_name,\n    cc: CC_RECIPIENTS,\n    subject: render(template.subject_template, vars),\n    body: renderedBody,\n    template_used: template.id,\n    station_codes: recipient.station_codes,\n    input_summary: {\n      alert_id: data.alert_id,\n      ticket_number: data.ticket_number,\n      state: data.states.join(', '),\n      issue_type: data.issue_type\n    }\n  }\n}];"
+      },
+      "id": "render-template",
+      "name": "Render Template (Preview)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2500, 100]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {"__rl": true, "mode": "id", "value": "19IIMKYbgkij4Q2PeDx8mpKzf_Q3pyhVzmy0xsb8hmXA"},
+        "sheetName": {"__rl": true, "mode": "name", "value": "alert_log"},
+        "columns": {"mappingMode": "defineBelow", "value": {"station_codes": "={{ $json.station_codes }}", "to_email": "={{ $json.to }}", "to_name": "={{ $json.to_name }}", "subject": "={{ $json.subject }}", "template_used": "={{ $json.template_used }}", "status": "test_preview", "processed_at": "={{ $now.toISO() }}"}}
+      },
+      "id": "log-sheets",
+      "name": "Log to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2750, 100],
+      "credentials": {
+        "googleSheetsOAuth2Api": {"id": "google_sheets", "name": "google_sheets"}
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst emails = items.map((item, idx) => item.json);\n\nconst summary = {\n  total_emails_generated: emails.length,\n  emails: emails.map(e => ({\n    email_num: e.email_number,\n    to: `${e.to_name} <${e.to}>`,\n    cc: e.cc.join(', '),\n    subject: e.subject,\n    template: e.template_used,\n    station_codes: e.station_codes.join(', '),\n    body_preview: e.body.substring(0, 300) + '...'\n  }))\n};\n\nreturn [{ json: summary }];"
+      },
+      "id": "email-summary",
+      "name": "📧 Email Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3000, 100]
+    }
+  ],
+  "connections": {
+    "Test Input Form": {"main": [[{"node": "Parse Test Input", "type": "main", "index": 0}]]},
+    "Parse Test Input": {"main": [[{"node": "Has Codes?", "type": "main", "index": 0}]]},
+    "Has Codes?": {"main": [[{"node": "Explode Codes", "type": "main", "index": 0}], [{"node": "No Codes Exception", "type": "main", "index": 0}]]},
+    "Explode Codes": {"main": [[{"node": "Lookup Sheets", "type": "main", "index": 0}]]},
+    "Lookup Sheets": {"main": [[{"node": "Process Lookup", "type": "main", "index": 0}]]},
+    "Process Lookup": {"main": [[{"node": "Aggregate Recipients", "type": "main", "index": 0}]]},
+    "Aggregate Recipients": {"main": [[{"node": "Select Template", "type": "main", "index": 0}]]},
+    "Select Template": {"main": [[{"node": "Has Recipients?", "type": "main", "index": 0}]]},
+    "Has Recipients?": {"main": [[{"node": "Explode Recipients", "type": "main", "index": 0}], [{"node": "All Unmatched Exception", "type": "main", "index": 0}]]},
+    "Explode Recipients": {"main": [[{"node": "Render Template (Preview)", "type": "main", "index": 0}]]},
+    "Render Template (Preview)": {"main": [[{"node": "Log to Sheet", "type": "main", "index": 0}]]},
+    "Log to Sheet": {"main": [[{"node": "📧 Email Summary", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1", "saveManualExecutions": true, "saveExecutionProgress": true},
+  "staticData": null,
+  "tags": [],
+  "pinData": {}
+}

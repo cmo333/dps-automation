@@ -1,0 +1,150 @@
+{
+  "name": "{{WORKFLOW_NAMES_DEADLETTER_HANDLER}}",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowIds": {
+          "mode": "list",
+          "values": []
+        }
+      },
+      "id": "error-trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract error details from the failed execution\nconst errorData = $input.first().json;\n\n// Get execution details\nconst execution = errorData.execution || {};\nconst workflow = errorData.workflow || {};\nconst error = execution.error || {};\n\n// Find the failed node\nlet failedNode = 'unknown';\nlet inputSnapshot = null;\n\nif (execution.data?.resultData?.runData) {\n  const runData = execution.data.resultData.runData;\n  for (const [nodeName, nodeResults] of Object.entries(runData)) {\n    const lastResult = nodeResults[nodeResults.length - 1];\n    if (lastResult?.error) {\n      failedNode = nodeName;\n      inputSnapshot = lastResult.inputData?.main?.[0]?.[0]?.json || null;\n      break;\n    }\n  }\n}\n\n// Try to extract alert-specific data from the input\nlet alertId = null;\nlet ticketNumber = null;\nlet stationCodes = [];\nlet emailMessageId = null;\n\nif (inputSnapshot) {\n  alertId = inputSnapshot.alert_id || inputSnapshot.alertId || null;\n  ticketNumber = inputSnapshot.ticket_number || inputSnapshot.ticketNumber || null;\n  stationCodes = inputSnapshot.member_codes || inputSnapshot.stationCodes || [];\n  emailMessageId = inputSnapshot.email_message_id || inputSnapshot.emailMessageId || null;\n}\n\n// Sanitize input snapshot (remove PII)\nfunction sanitize(obj) {\n  if (!obj) return null;\n  const sanitized = { ...obj };\n  const piiFields = ['customer_email', 'customer_phone', 'customer_first_name', 'customer_last_name', 'original_body'];\n  for (const field of piiFields) {\n    if (sanitized[field]) {\n      sanitized[field] = '[REDACTED]';\n    }\n  }\n  return sanitized;\n}\n\nconst now = new Date().toISOString();\n\nreturn [{\n  json: {\n    alert_id: alertId,\n    ticket_number: ticketNumber,\n    station_codes: JSON.stringify(stationCodes),\n    error_type: error.name || 'UnknownError',\n    error_message: error.message || 'No error message available',\n    error_details: JSON.stringify({\n      stack: error.stack?.substring(0, 500),\n      timestamp: error.timestamp,\n      workflow_id: workflow.id,\n      workflow_name: workflow.name,\n      execution_id: execution.id\n    }),\n    failed_node: failedNode,\n    input_snapshot: JSON.stringify(sanitize(inputSnapshot)),\n    email_message_id: emailMessageId,\n    reviewed: false,\n    created_at: now\n  }\n}];"
+      },
+      "id": "extract-error",
+      "name": "Extract Error Details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{STORAGE_SHEETS_SPREADSHEET_ID}}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{STORAGE_SHEETS_DEADLETTER_SHEET}}"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "log-deadletter-sheets",
+      "name": "Log Dead Letter (Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [500, 200],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "{{CREDENTIALS_GOOGLE_SHEETS}}",
+          "name": "{{CREDENTIALS_GOOGLE_SHEETS}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "dead_letter",
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "log-deadletter-postgres",
+      "name": "Log Dead Letter (Postgres)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [500, 400],
+      "disabled": true,
+      "credentials": {
+        "postgres": {
+          "id": "{{CREDENTIALS_POSTGRES}}",
+          "name": "{{CREDENTIALS_POSTGRES}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare notification email (no PII)\nconst data = $input.first().json;\n\nconst subject = `DPS Dead Letter: ${data.error_type} in ${data.failed_node}`;\n\nconst body = `A DPS workflow execution failed and has been logged to the dead letter queue.\n\n=== Error Summary ===\nError Type: ${data.error_type}\nFailed Node: ${data.failed_node}\nTime: ${data.created_at}\n\n=== Context (if available) ===\nAlert ID: ${data.alert_id || 'N/A'}\nTicket Number: ${data.ticket_number || 'N/A'}\nStation Codes: ${data.station_codes || '[]'}\n\n=== Error Message ===\n${data.error_message}\n\n=== Action Required ===\nPlease review the dead letter queue in Google Sheets or the database and take appropriate action.\n\nThis is an automated notification.`;\n\nreturn [{\n  json: {\n    notification_subject: subject,\n    notification_body: body\n  }\n}];"
+      },
+      "id": "prepare-notification",
+      "name": "Prepare Notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "toRecipients": "={{EMAIL_EXCEPTION_EMAIL}}",
+        "subject": "={{ $json.notification_subject }}",
+        "messageType": "text",
+        "message": "={{ $json.notification_body }}"
+      },
+      "id": "send-notification",
+      "name": "Send Notification",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [1000, 300],
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "{{CREDENTIALS_OUTLOOK}}",
+          "name": "{{CREDENTIALS_OUTLOOK}}"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [{"node": "Extract Error Details", "type": "main", "index": 0}]
+      ]
+    },
+    "Extract Error Details": {
+      "main": [
+        [
+          {"node": "Log Dead Letter (Sheets)", "type": "main", "index": 0},
+          {"node": "Log Dead Letter (Postgres)", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Log Dead Letter (Sheets)": {
+      "main": [
+        [{"node": "Prepare Notification", "type": "main", "index": 0}]
+      ]
+    },
+    "Log Dead Letter (Postgres)": {
+      "main": [
+        [{"node": "Prepare Notification", "type": "main", "index": 0}]
+      ]
+    },
+    "Prepare Notification": {
+      "main": [
+        [{"node": "Send Notification", "type": "main", "index": 0}]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  },
+  "staticData": null,
+  "tags": [],
+  "pinData": {}
+}

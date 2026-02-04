@@ -1,0 +1,424 @@
+{
+  "name": "EPR Compliance Escalation",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {"__rl": true, "mode": "id", "value": "1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI"},
+        "sheetName": {"__rl": true, "mode": "name", "value": "Sheet1"},
+        "options": {"returnAllMatches": true}
+      },
+      "id": "fetch-epr-data",
+      "name": "Fetch EPR Data",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [250, 200],
+      "credentials": {
+        "googleSheetsOAuth2Api": {"id": "google_sheets", "name": "google_sheets"}
+      }
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {"__rl": true, "mode": "id", "value": "1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI"},
+        "sheetName": {"__rl": true, "mode": "name", "value": "outreach_log"},
+        "options": {"returnAllMatches": true}
+      },
+      "id": "fetch-outreach-log",
+      "name": "Fetch Outreach Log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [250, 400],
+      "credentials": {
+        "googleSheetsOAuth2Api": {"id": "google_sheets", "name": "google_sheets"}
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "id": "merge-data",
+      "name": "Merge Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get EPR data and outreach log from merged inputs\nconst allInputs = $input.all();\nconst eprData = [];\nconst outreachLog = [];\n\n// Separate the merged data\nfor (const item of allInputs) {\n  if (item.json['MEMBER NAME'] !== undefined) {\n    eprData.push(item.json);\n  } else if (item.json['station_code'] !== undefined || item.json['member_name'] !== undefined) {\n    outreachLog.push(item.json);\n  }\n}\n\nconst THRESHOLD = 90;\nconst COOLDOWN_DAYS = 30;\nconst MAX_PER_RUN = 30; // Max to process - 30 allows up to 10 per rep (3 reps)\n\n// Build set of recently contacted station codes\nconst now = new Date();\nconst recentlyContacted = new Set();\n\nfor (const log of outreachLog) {\n  const sentAt = log.sent_at || log.processed_at || log.failed_at;\n  if (sentAt && log.station_code) {\n    const logDate = new Date(sentAt);\n    const daysSince = (now - logDate) / (1000 * 60 * 60 * 24);\n    if (daysSince <= COOLDOWN_DAYS) {\n      recentlyContacted.add(log.station_code);\n    }\n  }\n}\n\n// Filter EPR data\nconst candidates = [];\n\nfor (const row of eprData) {\n  const memberName = row['MEMBER NAME'] || '';\n  const stationCode = row['STATION CODE'] || '';\n  const ticketsReceived = parseInt(String(row['TICKETS RECEIVED'] || '0').replace(/,/g, ''), 10) || 0;\n  const responsesNeeded = parseInt(String(row['RESPONSES NEEDED'] || '0').replace(/,/g, ''), 10) || 0;\n  const totalResponsesSent = parseInt(String(row['TOTAL RESPS SENT'] || '0').replace(/,/g, ''), 10) || 0;\n  \n  let responseRate;\n  const rateRaw = row['% RESPONDED'];\n  if (rateRaw !== undefined && rateRaw !== null && rateRaw !== '') {\n    responseRate = parseFloat(String(rateRaw).replace('%', ''));\n  } else if (responsesNeeded > 0) {\n    responseRate = Math.round((totalResponsesSent / responsesNeeded) * 100);\n  } else {\n    responseRate = 100;\n  }\n  \n  // Skip if no station code or member name\n  if (!stationCode || !memberName) continue;\n  \n  // Skip if compliant\n  if (responseRate >= THRESHOLD) continue;\n  \n  // Skip if no responses needed\n  if (responsesNeeded === 0) continue;\n  \n  // Skip if recently contacted\n  if (recentlyContacted.has(stationCode)) continue;\n  \n  candidates.push({\n    json: {\n      member_name: memberName,\n      station_code: stationCode,\n      tickets_received: ticketsReceived,\n      responses_needed: responsesNeeded,\n      responses_sent: totalResponsesSent,\n      response_rate: responseRate,\n      threshold: THRESHOLD,\n      below_threshold_by: THRESHOLD - responseRate\n    }\n  });\n}\n\n// Limit to avoid API overload\nif (candidates.length === 0) {\n  return [{ json: { no_results: true, message: 'No members need outreach (all compliant or recently contacted)' } }];\n}\n\n// Return limited set for processing\nreturn candidates.slice(0, MAX_PER_RUN);"
+      },
+      "id": "filter-candidates",
+      "name": "Filter Candidates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [{"id": "has-results", "leftValue": "={{ $json.no_results }}", "rightValue": true, "operator": {"type": "boolean", "operation": "notEquals"}}],
+          "combinator": "and"
+        }
+      },
+      "id": "check-results",
+      "name": "Has Candidates?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/2-35681060/search",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {"parameters": [{"name": "Authorization", "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"}]},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"filterGroups\": [{\n    \"filters\": [{\n      \"propertyName\": \"station_code\",\n      \"operator\": \"EQ\",\n      \"value\": \"{{ $json.station_code }}\"\n    }]\n  }],\n  \"properties\": [\"station_code\", \"hs_object_id\"]\n}",
+        "options": {"batching": {"batch": {"batchSize": 1, "batchInterval": 500}}}
+      },
+      "id": "hubspot-search",
+      "name": "Search HubSpot Station",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process ALL items, not just first\nconst allInputs = $input.all();\nconst allEprData = $('Filter Candidates').all();\nconst results = [];\n\nfor (let i = 0; i < allInputs.length; i++) {\n  const input = allInputs[i].json;\n  const eprData = allEprData[i]?.json || {};\n  \n  if (!input.results || input.results.length === 0) {\n    results.push({\n      json: {\n        ...eprData,\n        hubspot_found: false,\n        skip_reason: 'Station code not found in HubSpot'\n      }\n    });\n  } else {\n    results.push({\n      json: {\n        ...eprData,\n        hubspot_found: true,\n        hubspot_station_id: input.results[0].id\n      }\n    });\n  }\n}\n\nreturn results;"
+      },
+      "id": "process-search",
+      "name": "Process Search",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1500, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [{"id": "found", "leftValue": "={{ $json.hubspot_found }}", "rightValue": true, "operator": {"type": "boolean", "operation": "equals"}}],
+          "combinator": "and"
+        }
+      },
+      "id": "check-found",
+      "name": "Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1750, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.hubapi.com/crm/v4/objects/2-35681060/{{ $json.hubspot_station_id }}/associations/companies",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {"parameters": [{"name": "Authorization", "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"}]},
+        "options": {"batching": {"batch": {"batchSize": 1, "batchInterval": 300}}}
+      },
+      "id": "get-company-assoc",
+      "name": "Get Company Assoc",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process ALL items\nconst allInputs = $input.all();\nconst allProcessSearch = $('Process Search').all();\nconst results = [];\n\nfor (let i = 0; i < allInputs.length; i++) {\n  const assoc = allInputs[i].json;\n  const eprData = allProcessSearch[i]?.json || {};\n  const companyId = assoc.results?.[0]?.toObjectId;\n  \n  results.push({\n    json: {\n      ...eprData,\n      company_id: companyId || null\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "extract-company",
+      "name": "Extract Company ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2250, 100]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.hubapi.com/crm/v3/objects/companies/{{ $json.company_id }}?properties=name,hubspot_owner_id",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {"parameters": [{"name": "Authorization", "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"}]},
+        "options": {"batching": {"batch": {"batchSize": 1, "batchInterval": 300}}}
+      },
+      "id": "get-company",
+      "name": "Get Company",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2500, 100]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.hubapi.com/crm/v3/owners/{{ $json.properties.hubspot_owner_id }}",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {"parameters": [{"name": "Authorization", "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"}]},
+        "options": {"batching": {"batch": {"batchSize": 1, "batchInterval": 300}}}
+      },
+      "id": "get-owner",
+      "name": "Get Owner",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2750, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process ALL items\nconst allInputs = $input.all();\nconst allCompany = $('Get Company').all();\nconst allExtract = $('Extract Company ID').all();\nconst results = [];\n\nfor (let i = 0; i < allInputs.length; i++) {\n  const owner = allInputs[i].json;\n  const company = allCompany[i]?.json || {};\n  const eprData = allExtract[i]?.json || {};\n  \n  const ownerEmail = (owner.email || '').toLowerCase();\n  \n  if (ownerEmail === 'nick.white@usan.org') {\n    results.push({\n      json: {\n        ...eprData,\n        skip: true,\n        skip_reason: 'Nick company - excluded from automation',\n        owner_email: ownerEmail,\n        company_name: company.properties?.name || ''\n      }\n    });\n  } else {\n    results.push({\n      json: {\n        ...eprData,\n        skip: false,\n        owner_email: ownerEmail,\n        company_name: company.properties?.name || '',\n        owner_id: company.properties?.hubspot_owner_id\n      }\n    });\n  }\n}\n\nreturn results;"
+      },
+      "id": "check-owner",
+      "name": "Check Owner",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3000, 100]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [{"id": "not-skip", "leftValue": "={{ $json.skip }}", "rightValue": false, "operator": {"type": "boolean", "operation": "equals"}}],
+          "combinator": "and"
+        }
+      },
+      "id": "check-skip",
+      "name": "Not Skipped?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3250, 100]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.hubapi.com/crm/v4/objects/2-35681060/{{ $json.hubspot_station_id }}/associations/contacts",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {"parameters": [{"name": "Authorization", "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"}]},
+        "options": {"batching": {"batch": {"batchSize": 1, "batchInterval": 300}}}
+      },
+      "id": "get-contacts",
+      "name": "Get Contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3500, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process ALL items\nconst allInputs = $input.all();\nconst allCheckOwner = $('Check Owner').all();\nconst results = [];\n\nfor (let i = 0; i < allInputs.length; i++) {\n  const assoc = allInputs[i].json;\n  const eprData = allCheckOwner[i]?.json || {};\n  \n  const memberRep = assoc.results?.find(a => \n    a.associationTypes?.some(t => t.typeId === 36 || t.label === 'Member Representative')\n  );\n  \n  const contactId = memberRep?.toObjectId || assoc.results?.[0]?.toObjectId;\n  \n  if (!contactId) {\n    results.push({\n      json: {\n        ...eprData,\n        contact_found: false,\n        skip_reason: 'No contact found'\n      }\n    });\n  } else {\n    results.push({\n      json: {\n        ...eprData,\n        contact_found: true,\n        contact_id: contactId\n      }\n    });\n  }\n}\n\nreturn results;"
+      },
+      "id": "find-contact",
+      "name": "Find Contact",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3750, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [{"id": "has-contact", "leftValue": "={{ $json.contact_found }}", "rightValue": true, "operator": {"type": "boolean", "operation": "equals"}}],
+          "combinator": "and"
+        }
+      },
+      "id": "check-contact",
+      "name": "Has Contact?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [4000, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.hubapi.com/crm/v3/objects/contacts/{{ $json.contact_id }}?properties=firstname,lastname,email",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {"parameters": [{"name": "Authorization", "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"}]},
+        "options": {"batching": {"batch": {"batchSize": 1, "batchInterval": 300}}}
+      },
+      "id": "get-contact-details",
+      "name": "Get Contact Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [4250, -100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process ALL items\nconst allInputs = $input.all();\nconst allFindContact = $('Find Contact').all();\nconst results = [];\n\nfor (let i = 0; i < allInputs.length; i++) {\n  const contact = allInputs[i].json;\n  const eprData = allFindContact[i]?.json || {};\n  \n  const firstName = contact.properties?.firstname || (eprData.member_name || '').split(' ')[0];\n  const email = contact.properties?.email;\n  \n  if (!email) {\n    results.push({\n      json: {\n        ...eprData,\n        skip: true,\n        skip_reason: 'Contact has no email'\n      }\n    });\n  } else {\n    results.push({\n      json: {\n        ...eprData,\n        first_name: firstName,\n        last_name: contact.properties?.lastname || '',\n        email: email,\n        contact_name: `${firstName} ${contact.properties?.lastname || ''}`.trim()\n      }\n    });\n  }\n}\n\nreturn results;"
+      },
+      "id": "merge-contact",
+      "name": "Merge Contact",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4500, -100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process ALL items\nconst allInputs = $input.all();\nconst results = [];\n\n// ============ TEST MODE CONFIG ============\nconst TEST_MODE = true;\nconst TEST_EMAIL = 'christian.olesen@usan.org';\n// ==========================================\n\nconst REP_DETAILS = {\n  'christian.olesen@usan.org': { name: 'Christian Olesen', title: 'Member Services Specialist', phone: 'REDACTED_PHONE', calendly: 'https://calendly.com/christian-olesen-usan/30min', calendlyText: \"Christian's Availability\" },\n  'germain.suess@usan.org': { name: 'Germain Suess', title: 'Member Services Specialist', phone: 'REDACTED_PHONE', calendly: 'https://calendly.com/germain-usan/yearly-membership-review', calendlyText: \"Germain's Availability\" },\n  'trevor.harris@usan.org': { name: 'Trevor Harris', title: 'Member Services Lead', phone: 'REDACTED_PHONE', calendly: 'https://calendly.com/trevor-harris-kr8/yearly-membership-review', calendlyText: \"Trevor's Availability\" }\n};\n\nconst LOGO_URL = 'https://i.imgur.com/v6diEdK.jpg';\nconst BANNER_URL = 'https://i.imgur.com/HfkbUwp.png';\n\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.repCounts) staticData.repCounts = {};\n\nfor (const item of allInputs) {\n  const data = item.json;\n  \n  if (!data.email || data.skip) {\n    results.push({ json: { ...data, skip: true } });\n    continue;\n  }\n  \n  const ownerEmail = (data.owner_email || '').toLowerCase();\n  const rep = REP_DETAILS[ownerEmail] || REP_DETAILS['christian.olesen@usan.org'];\n  const repKey = ownerEmail || 'christian.olesen@usan.org';\n  staticData.repCounts[repKey] = (staticData.repCounts[repKey] || 0) + 1;\n  \n  if (staticData.repCounts[repKey] > 10) {\n    results.push({ json: { ...data, skip: true, skip_reason: `Rep ${rep.name} has reached 10 emails this run`, rep_name: rep.name } });\n    continue;\n  }\n  \n  const SIGNATURE_HTML = `<p style=\"font-family: Aptos, sans-serif; font-size: 12pt;\">Thank you,</p><br><table cellspacing=\"0\" cellpadding=\"0\" style=\"border-collapse: collapse;\"><tr><td style=\"padding-right: 15px; vertical-align: top; border-right: 1.5pt solid #000;\"><img src=\"${LOGO_URL}\" alt=\"USAN 811\" width=\"175\" style=\"max-width: 175px;\"></td><td style=\"padding-left: 15px; vertical-align: top;\"><p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><b>${rep.name}</b></p><p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">${rep.title}</p><p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">${rep.phone}</p><p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><a href=\"http://www.undergroundservicealert.org/\" style=\"color: #0563c1;\">undergroundservicealert.org</a></p><p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">4005 Port Chicago Hwy #100 Concord, CA 94520</p><p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><a href=\"${rep.calendly}\" style=\"color: #4c94d8;\"><b>${rep.calendlyText}</b></a></p></td></tr></table><br><a href=\"https://www.undergroundservicealert.org/damage-prevention-portal/\"><img src=\"${BANNER_URL}\" alt=\"NEW Damage Prevention Portal\" width=\"450\" style=\"max-width: 450px;\"></a><br><br><p style=\"font-size: 9pt; color: #666; font-family: Aptos, sans-serif;\">This message contains confidential information and is intended only for the intended recipients. If you are not an intended recipient you should not disseminate, distribute or copy this e-mail. Please notify us immediately by e-mail if you have received this e-mail by mistake and delete this e-mail from your system.</p>`;\n  \n  const emailBody = `<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head><body style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\"><p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\"><strong>${data.first_name}</strong>,</p><p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt; background-color: #FFFF00; padding: 5px; display: inline-block;\"><strong>Your current EPR response rate: ${data.response_rate}%</strong> (${data.responses_sent} of ${data.responses_needed} responses)</p><p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">Just reaching out because Electronic Positive Responses are still not being posted on the tickets that <strong>${data.member_name}</strong> is receiving.</p><p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt; margin: 15px 0; padding: 10px; border-left: 3px solid #ccc; background: #f9f9f9;\"><em>4216.3.(c) (1) (A) Every operator shall supply an electronic positive response through the regional notification center before the legal excavation start date and time.</em> — <a href=\"https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?lawCode=GOV&division=5.&title=1.&part=&chapter=3.1.&article=2\">California Government Code 4216</a></p><p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">To be in compliance you will need to post EPR on all tickets that you have received. By being out of compliance, <strong>mandatory training and/or fines can be imposed by the Underground Safety Board</strong>.</p><p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">To post EPR on the tickets that you receive please login to the Damage Prevention Portal and follow the instructions in our video:</p><ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\"><li><strong>CA DPP Login:</strong> <a href=\"https://appsca.undergroundservicealert.org/pcadmin/Account/Login\">https://appsca.undergroundservicealert.org/pcadmin/Account/Login</a></li><li><strong>How to use Electronic Positive Response:</strong> <a href=\"https://www.youtube.com/watch?v=c1b6HlX-fx4\">https://www.youtube.com/watch?v=c1b6HlX-fx4</a></li></ul><p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">If you would like to schedule a meeting with me, here is my availability: <a href=\"${rep.calendly}\"><strong>Schedule a Meeting</strong></a></p><p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">Please let me know if you have any questions.</p>${SIGNATURE_HTML}</body></html>`;\n  \n  let subject = `${data.first_name}, EPR Compliance - Action Required (${data.response_rate}%)`;\n  let finalEmail = data.email;\n  let finalBody = emailBody;\n  \n  if (TEST_MODE) {\n    finalEmail = TEST_EMAIL;\n    subject = `[TEST] ${subject}`;\n    const testBanner = `<div style=\"background-color: #ff6b6b; color: white; padding: 15px; margin-bottom: 20px; border-radius: 5px; font-family: Arial, sans-serif;\"><strong>TEST MODE - This email would be sent to:</strong><br><strong>Recipient:</strong> ${data.email}<br><strong>Contact:</strong> ${data.contact_name || data.first_name}<br><strong>Member:</strong> ${data.member_name}<br><strong>Rep:</strong> ${rep.name}</div>`;\n    finalBody = emailBody.replace('<body style', '<body style').replace('11pt;\"><p', '11pt;\">' + testBanner + '<p');\n  }\n  \n  results.push({ json: { ...data, skip: false, email: finalEmail, original_email: data.email, email_subject: subject, email_body: finalBody, rep_name: rep.name, test_mode: TEST_MODE } });\n}\n\nreturn results;"
+      },
+      "id": "build-email",
+      "name": "Build Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4750, -100]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [{"id": "send", "leftValue": "={{ $json.skip }}", "rightValue": false, "operator": {"type": "boolean", "operation": "equals"}}],
+          "combinator": "and"
+        }
+      },
+      "id": "should-send",
+      "name": "Should Send?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [5000, -100]
+    },
+    {
+      "parameters": {
+        "fromEmail": "memberservices@usan.org",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.email_subject }}",
+        "html": "={{ $json.email_body }}"
+      },
+      "id": "send-email",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.mailgun",
+      "typeVersion": 1,
+      "position": [5250, -200],
+      "credentials": {
+        "mailgunApi": {"id": "mailgun_api", "name": "Mailgun account 2"}
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process ALL items\nconst allInputs = $input.all();\nconst now = new Date().toISOString();\nconst results = [];\n\nfor (const item of allInputs) {\n  const data = item.json;\n  results.push({\n    json: {\n      member_name: data.member_name,\n      station_code: data.station_code,\n      email: data.original_email || data.email,\n      sent_to: data.email,\n      contact_name: data.contact_name,\n      response_rate: data.response_rate,\n      rep_name: data.rep_name,\n      status: data.test_mode ? 'test_sent' : 'sent',\n      sent_at: now\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "prep-log-sent",
+      "name": "Prep Log (Sent)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5500, -200]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {"__rl": true, "mode": "id", "value": "1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI"},
+        "sheetName": {"__rl": true, "mode": "name", "value": "outreach_log"},
+        "columns": {"mappingMode": "autoMapInputData", "value": {}}
+      },
+      "id": "log-sent",
+      "name": "Log Sent",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [5750, -200],
+      "credentials": {
+        "googleSheetsOAuth2Api": {"id": "google_sheets", "name": "google_sheets"}
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process ALL items\nconst allInputs = $input.all();\nconst now = new Date().toISOString();\nconst results = [];\n\nfor (const item of allInputs) {\n  const data = item.json;\n  results.push({\n    json: {\n      member_name: data.member_name,\n      station_code: data.station_code,\n      email: data.email || 'N/A',\n      response_rate: data.response_rate,\n      rep_name: data.rep_name || 'N/A',\n      status: 'send_failed',\n      sent_at: now\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "prep-log-failed",
+      "name": "Prep Log (Failed)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5500, 0]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {"__rl": true, "mode": "id", "value": "1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI"},
+        "sheetName": {"__rl": true, "mode": "name", "value": "outreach_log"},
+        "columns": {"mappingMode": "autoMapInputData", "value": {}}
+      },
+      "id": "log-failed",
+      "name": "Log Failed",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [5750, 0],
+      "credentials": {
+        "googleSheetsOAuth2Api": {"id": "google_sheets", "name": "google_sheets"}
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process ALL items\nconst allInputs = $input.all();\nconst now = new Date().toISOString();\nconst results = [];\n\nfor (const item of allInputs) {\n  const data = item.json;\n  results.push({\n    json: {\n      member_name: data.member_name || 'N/A',\n      station_code: data.station_code || 'N/A',\n      response_rate: data.response_rate || 'N/A',\n      rep_name: data.rep_name || 'N/A',\n      status: 'skipped',\n      skip_reason: data.skip_reason || 'Unknown',\n      processed_at: now\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "prep-log-skipped",
+      "name": "Prep Log (Skipped)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3500, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {"__rl": true, "mode": "id", "value": "1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI"},
+        "sheetName": {"__rl": true, "mode": "name", "value": "outreach_log"},
+        "columns": {"mappingMode": "autoMapInputData", "value": {}}
+      },
+      "id": "log-skipped",
+      "name": "Log Skipped",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [3750, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {"id": "google_sheets", "name": "google_sheets"}
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { status: 'complete', message: 'No members need outreach' } }];"
+      },
+      "id": "no-candidates",
+      "name": "No Candidates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 400]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {"main": [[{"node": "Fetch EPR Data", "type": "main", "index": 0}, {"node": "Fetch Outreach Log", "type": "main", "index": 0}]]},
+    "Fetch EPR Data": {"main": [[{"node": "Merge Data", "type": "main", "index": 0}]]},
+    "Fetch Outreach Log": {"main": [[{"node": "Merge Data", "type": "main", "index": 1}]]},
+    "Merge Data": {"main": [[{"node": "Filter Candidates", "type": "main", "index": 0}]]},
+    "Filter Candidates": {"main": [[{"node": "Has Candidates?", "type": "main", "index": 0}]]},
+    "Has Candidates?": {"main": [[{"node": "Search HubSpot Station", "type": "main", "index": 0}], [{"node": "No Candidates", "type": "main", "index": 0}]]},
+    "Search HubSpot Station": {"main": [[{"node": "Process Search", "type": "main", "index": 0}]]},
+    "Process Search": {"main": [[{"node": "Found?", "type": "main", "index": 0}]]},
+    "Found?": {"main": [[{"node": "Get Company Assoc", "type": "main", "index": 0}], [{"node": "Prep Log (Skipped)", "type": "main", "index": 0}]]},
+    "Get Company Assoc": {"main": [[{"node": "Extract Company ID", "type": "main", "index": 0}]]},
+    "Extract Company ID": {"main": [[{"node": "Get Company", "type": "main", "index": 0}]]},
+    "Get Company": {"main": [[{"node": "Get Owner", "type": "main", "index": 0}]]},
+    "Get Owner": {"main": [[{"node": "Check Owner", "type": "main", "index": 0}]]},
+    "Check Owner": {"main": [[{"node": "Not Skipped?", "type": "main", "index": 0}]]},
+    "Not Skipped?": {"main": [[{"node": "Get Contacts", "type": "main", "index": 0}], [{"node": "Prep Log (Skipped)", "type": "main", "index": 0}]]},
+    "Get Contacts": {"main": [[{"node": "Find Contact", "type": "main", "index": 0}]]},
+    "Find Contact": {"main": [[{"node": "Has Contact?", "type": "main", "index": 0}]]},
+    "Has Contact?": {"main": [[{"node": "Get Contact Details", "type": "main", "index": 0}], [{"node": "Prep Log (Skipped)", "type": "main", "index": 0}]]},
+    "Get Contact Details": {"main": [[{"node": "Merge Contact", "type": "main", "index": 0}]]},
+    "Merge Contact": {"main": [[{"node": "Build Email", "type": "main", "index": 0}]]},
+    "Build Email": {"main": [[{"node": "Should Send?", "type": "main", "index": 0}]]},
+    "Should Send?": {"main": [[{"node": "Send Email", "type": "main", "index": 0}], [{"node": "Prep Log (Skipped)", "type": "main", "index": 0}]]},
+    "Send Email": {"main": [[{"node": "Prep Log (Sent)", "type": "main", "index": 0}], [{"node": "Prep Log (Failed)", "type": "main", "index": 0}]]},
+    "Prep Log (Sent)": {"main": [[{"node": "Log Sent", "type": "main", "index": 0}]]},
+    "Prep Log (Failed)": {"main": [[{"node": "Log Failed", "type": "main", "index": 0}]]},
+    "Prep Log (Skipped)": {"main": [[{"node": "Log Skipped", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1", "saveManualExecutions": true, "saveExecutionProgress": true}
+}

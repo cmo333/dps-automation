@@ -1,0 +1,105 @@
+{
+  "version": "2.0",
+  "description": "USAN DPS Alert email templates - state-aware with actual DPP links and compliance references",
+  "default_template": "general",
+  "urls": {
+    "ca_dpp_login": "https://appsca.undergroundservicealert.org/pcadmin/Account/Login?returnUrl=%2Fpcadmin%2FOperations",
+    "nv_dpp_login": "https://appsnv.undergroundservicealert.org/pcadmin/Account/Login",
+    "epr_video": "https://www.youtube.com/watch?v=c1b6HlX-fx4",
+    "aoi_video": "https://www.youtube.com/watch?v=KZzHnITi-3Q&feature=youtu.be",
+    "ca_code_4216": "https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?lawCode=GOV&division=5.&title=1.&part=&chapter=3.1.&article=2"
+  },
+  "templates": [
+    {
+      "id": "no_response_ca",
+      "name": "No Response - California",
+      "priority": 1,
+      "match_rules": [
+        { "type": "state_is", "value": "California", "case_insensitive": true },
+        { "type": "issue_type_contains", "value": "no response", "case_insensitive": true }
+      ],
+      "match_mode": "all",
+      "subject_template": "No Response Alert: Ticket #{{ticket_number}} - {{station_codes}}",
+      "body_template": "{{rep_name}}, please review the form below and reach out to the customer listed to resolve the issue.\n\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP) as required by California Code 4216 (https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?lawCode=GOV&division=5.&title=1.&part=&chapter=3.1.&article=2).\n\n• How to use Electronic Positive Response - https://www.youtube.com/watch?v=c1b6HlX-fx4\n\nThank you,"
+    },
+    {
+      "id": "no_response_nv",
+      "name": "No Response - Nevada",
+      "priority": 2,
+      "match_rules": [
+        { "type": "state_is", "value": "Nevada", "case_insensitive": true },
+        { "type": "issue_type_contains", "value": "no response", "case_insensitive": true }
+      ],
+      "match_mode": "all",
+      "subject_template": "No Response Alert: Ticket #{{ticket_number}} - {{station_codes}}",
+      "body_template": "{{rep_name}}, please review the form below and reach out to the customer listed to resolve the issue.\n\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP) as required by NRS 455.\n\n• How to use Electronic Positive Response - https://www.youtube.com/watch?v=c1b6HlX-fx4\n\nThank you,"
+    },
+    {
+      "id": "no_response_generic",
+      "name": "No Response - Generic",
+      "priority": 3,
+      "match_rules": [
+        { "type": "issue_type_contains", "value": "no response", "case_insensitive": true }
+      ],
+      "match_mode": "any",
+      "subject_template": "No Response Alert: Ticket #{{ticket_number}} - {{station_codes}}",
+      "body_template": "{{rep_name}}, please review the form below and reach out to the customer listed to resolve the issue.\n\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP).\n\n• How to use Electronic Positive Response - https://www.youtube.com/watch?v=c1b6HlX-fx4\n\nThank you,"
+    },
+    {
+      "id": "contact_info_issue",
+      "name": "Contact Info Issue",
+      "priority": 4,
+      "match_rules": [
+        { "type": "notes_contains", "value": "contact", "case_insensitive": true },
+        { "type": "notes_contains", "value": "wrong number", "case_insensitive": true },
+        { "type": "notes_contains", "value": "wrong email", "case_insensitive": true },
+        { "type": "notes_contains", "value": "outdated", "case_insensitive": true },
+        { "type": "issue_type_contains", "value": "contact", "case_insensitive": true }
+      ],
+      "match_mode": "any",
+      "subject_template": "Contact Info Issue: Ticket #{{ticket_number}} - {{station_codes}}",
+      "body_template": "{{rep_name}}, please review the email below from one of our agents for reference and reach out to the excavator on the ticket to resolve the issue.\n\nIf you need to update your Member Contact information within the Damage Prevention Portal, please use the link below to sign in. Then navigate to the station details for your station code (Settings > OneCallAccess).\n\nNV DPP Login Page - https://appsnv.undergroundservicealert.org/pcadmin/Account/Login\nCA DPP Login Page - https://appsca.undergroundservicealert.org/pcadmin/Account/Login?returnUrl=%2Fpcadmin%2FOperations - The Damage Prevention Portal is where you can manage your mapping, contact info, and ticket delivery.\n\nContact Information can be found under Settings - OneCallAccess then clicking on your Station Code.\nThe Member Contact is displayed on each ticket available for the excavator.\nThe Member IT contact is not displayed on the ticket and is meant for the Member Rep.\n\nPlease let me know if you have any questions.\n\nThank you,"
+    },
+    {
+      "id": "member_manually_added",
+      "name": "Member Manually Added",
+      "priority": 5,
+      "match_rules": [
+        { "type": "issue_type_contains", "value": "manually added", "case_insensitive": true },
+        { "type": "issue_type_contains", "value": "manual add", "case_insensitive": true }
+      ],
+      "match_mode": "any",
+      "subject_template": "Manual Add Alert: Ticket #{{ticket_number}} - {{station_codes}}",
+      "body_template": "Hello {{rep_name}},\n\nPlease review the email below from one of our agents for reference. The station code {{station_codes}} has been manually added to ticket# {{ticket_number}} at the request of the excavator.\n\nIf you need to update your Area of Interest, please visit the Damage Prevention Portal using the link below.\n\nCA DPP Login Page - https://appsca.undergroundservicealert.org/pcadmin/Account/Login?returnUrl=%2Fpcadmin%2FOperations - The Damage Prevention Portal is where you can manage your mapping, contact info, and ticket delivery.\n\nArea of Interest (AOI) can be found under Settings - OneCallAccess and clicking on your Station Code, then clicking on Area of Interest.\nHere is a video that goes into more detail: How to manage your Area of Interest - https://www.youtube.com/watch?v=KZzHnITi-3Q&feature=youtu.be\n\nThank you,"
+    },
+    {
+      "id": "general",
+      "name": "General DPS Alert",
+      "priority": 999,
+      "match_rules": [
+        { "type": "always", "value": true }
+      ],
+      "match_mode": "any",
+      "subject_template": "DPS Alert: Ticket #{{ticket_number}} - {{station_codes}}",
+      "body_template": "{{rep_name}}, please review the form below and take appropriate action.\n\nTicket Number: {{ticket_number}}\nStation Code(s): {{station_codes}}\nState(s): {{states}}\nIssue Type: {{issue_type}}\n\nAdditional Notes:\n{{notes}}\n\nThank you,"
+    }
+  ],
+  "exception_templates": {
+    "missing_station_code": {
+      "subject": "DPS Exception: Missing Station Code - Alert #{{alert_id}}",
+      "body": "A DPS alert could not be automatically routed.\n\nReason: No station code provided in the alert.\n\nAlert ID: {{alert_id}}\nTicket Number: {{ticket_number}}\nIssue Type: {{issue_type}}\nNotes: {{notes}}\n\nPlease review and route manually."
+    },
+    "unknown_station_code": {
+      "subject": "DPS Exception: Unknown Station Code(s) - {{unknown_codes}}",
+      "body": "A DPS alert contains station code(s) not found in the mapping table.\n\nUnknown Code(s): {{unknown_codes}}\nAlert ID: {{alert_id}}\nTicket Number: {{ticket_number}}\n\nPlease add these codes to HubSpot or route manually."
+    },
+    "no_rep_assigned": {
+      "subject": "DPS Exception: No Rep Assigned - {{station_codes}}",
+      "body": "A DPS alert matched station code(s) but no Member Representative is assigned.\n\nStation Code(s): {{station_codes}}\nAlert ID: {{alert_id}}\nTicket Number: {{ticket_number}}\n\nPlease assign a rep in HubSpot and trigger a sync, or route manually."
+    },
+    "send_failure": {
+      "subject": "DPS Exception: Email Send Failed - Ticket #{{ticket_number}}",
+      "body": "Failed to send DPS alert email.\n\nRecipient: {{rep_email}}\nError: {{error_message}}\n\nAlert ID: {{alert_id}}\nTicket Number: {{ticket_number}}\nStation Code(s): {{station_codes}}\n\nPlease forward manually or investigate the error."
+    }
+  }
+}

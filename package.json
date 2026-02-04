@@ -1,0 +1,19 @@
+{
+  "name": "dps-automation",
+  "version": "1.0.0",
+  "description": "DPS Alerts Automation System for n8n",
+  "type": "module",
+  "scripts": {
+    "deploy": "node scripts/deploy_workflows.mjs --all",
+    "deploy:sync": "node scripts/deploy_workflows.mjs --workflow station_rep_sync",
+    "deploy:processor": "node scripts/deploy_workflows.mjs --workflow dps_email_processor",
+    "deploy:deadletter": "node scripts/deploy_workflows.mjs --workflow deadletter_handler",
+    "render": "node scripts/render_workflow.mjs",
+    "validate": "node scripts/deploy_workflows.mjs --validate-only"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

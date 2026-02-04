@@ -1,0 +1,22 @@
+{
+  "parameters": {
+    "fromEmail": "REDACTED_EMAIL",
+    "toEmail": "REDACTED_EMAIL",
+    "subject": "={{ $json.subject }}",
+    "text": "={{ $json.body }}",
+    "options": {
+      "appendAttribution": false
+    }
+  },
+  "id": "send-test-email",
+  "name": "📤 Send Demo Email",
+  "type": "n8n-nodes-base.emailSend",
+  "typeVersion": 2.1,
+  "position": [2750, 100],
+  "credentials": {
+    "smtp": {
+      "id": "smtp_gmail",
+      "name": "Gmail SMTP"
+    }
+  }
+}
