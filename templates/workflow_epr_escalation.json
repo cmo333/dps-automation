@@ -7,51 +7,84 @@
       "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [0, 300]
+      "position": [
+        0,
+        304
+      ]
     },
     {
       "parameters": {
-        "operation": "read",
-        "documentId": {"__rl": true, "mode": "id", "value": "1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI"},
-        "sheetName": {"__rl": true, "mode": "name", "value": "Sheet1"},
-        "options": {"returnAllMatches": true}
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI/edit#gid=0"
+        },
+        "options": {}
       },
       "id": "fetch-epr-data",
       "name": "Fetch EPR Data",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
-      "position": [250, 200],
+      "position": [
+        256,
+        208
+      ],
+      "retryOnFail": true,
       "credentials": {
-        "googleSheetsOAuth2Api": {"id": "google_sheets", "name": "google_sheets"}
+        "googleSheetsOAuth2Api": {
+          "id": "hNgQTykrjXrpQiwu",
+          "name": "Google Sheets account"
+        }
       }
     },
     {
       "parameters": {
-        "operation": "read",
-        "documentId": {"__rl": true, "mode": "id", "value": "1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI"},
-        "sheetName": {"__rl": true, "mode": "name", "value": "outreach_log"},
-        "options": {"returnAllMatches": true}
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI/edit?gid=1583588067#gid=1583588067",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1583588067,
+          "mode": "list",
+          "cachedResultName": "outreach_log ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI/edit#gid=1583588067"
+        },
+        "options": {}
       },
       "id": "fetch-outreach-log",
       "name": "Fetch Outreach Log",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
-      "position": [250, 400],
+      "position": [
+        256,
+        400
+      ],
       "credentials": {
-        "googleSheetsOAuth2Api": {"id": "google_sheets", "name": "google_sheets"}
+        "googleSheetsOAuth2Api": {
+          "id": "hNgQTykrjXrpQiwu",
+          "name": "Google Sheets account"
+        }
       }
     },
     {
-      "parameters": {
-        "mode": "combine",
-        "combineBy": "combineAll",
-        "options": {}
-      },
+      "parameters": {},
       "id": "merge-data",
       "name": "Merge Data",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
-      "position": [500, 300]
+      "position": [
+        512,
+        304
+      ]
     },
     {
       "parameters": {
@@ -61,39 +94,76 @@
       "name": "Filter Candidates",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [750, 300]
+      "position": [
+        752,
+        304
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
-          "conditions": [{"id": "has-results", "leftValue": "={{ $json.no_results }}", "rightValue": true, "operator": {"type": "boolean", "operation": "notEquals"}}],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-results",
+              "leftValue": "={{ $json.no_results }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ],
           "combinator": "and"
-        }
+        },
+        "options": {}
       },
       "id": "check-results",
       "name": "Has Candidates?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1000, 300]
+      "position": [
+        1008,
+        304
+      ]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://api.hubapi.com/crm/v3/objects/2-35681060/search",
-        "authentication": "none",
         "sendHeaders": true,
-        "headerParameters": {"parameters": [{"name": "Authorization", "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"}]},
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"filterGroups\": [{\n    \"filters\": [{\n      \"propertyName\": \"station_code\",\n      \"operator\": \"EQ\",\n      \"value\": \"{{ $json.station_code }}\"\n    }]\n  }],\n  \"properties\": [\"station_code\", \"hs_object_id\"]\n}",
-        "options": {"batching": {"batch": {"batchSize": 1, "batchInterval": 500}}}
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 500
+            }
+          }
+        }
       },
       "id": "hubspot-search",
       "name": "Search HubSpot Station",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1250, 200]
+      "position": [
+        1264,
+        208
+      ]
     },
     {
       "parameters": {
@@ -103,188 +173,328 @@
       "name": "Process Search",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1500, 200]
+      "position": [
+        1504,
+        208
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
-          "conditions": [{"id": "found", "leftValue": "={{ $json.hubspot_found }}", "rightValue": true, "operator": {"type": "boolean", "operation": "equals"}}],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "found",
+              "leftValue": "={{ $json.hubspot_found }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
           "combinator": "and"
-        }
+        },
+        "options": {}
       },
       "id": "check-found",
       "name": "Found?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1750, 200]
+      "position": [
+        1760,
+        208
+      ]
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "=https://api.hubapi.com/crm/v4/objects/2-35681060/{{ $json.hubspot_station_id }}/associations/companies",
-        "authentication": "none",
         "sendHeaders": true,
-        "headerParameters": {"parameters": [{"name": "Authorization", "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"}]},
-        "options": {"batching": {"batch": {"batchSize": 1, "batchInterval": 300}}}
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 300
+            }
+          }
+        }
       },
       "id": "get-company-assoc",
       "name": "Get Company Assoc",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2000, 100]
+      "position": [
+        2000,
+        112
+      ]
     },
     {
       "parameters": {
-        "jsCode": "// Process ALL items\nconst allInputs = $input.all();\nconst allProcessSearch = $('Process Search').all();\nconst results = [];\n\nfor (let i = 0; i < allInputs.length; i++) {\n  const assoc = allInputs[i].json;\n  const eprData = allProcessSearch[i]?.json || {};\n  const companyId = assoc.results?.[0]?.toObjectId;\n  \n  results.push({\n    json: {\n      ...eprData,\n      company_id: companyId || null\n    }\n  });\n}\n\nreturn results;"
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Get HTTP response from current item\nconst apiResponse = $input.item.json;\n\n// Get paired item from the node RIGHT BEFORE the HTTP node (Found? TRUE branch)\n// The IF node passes through all json data, so this has our EPR data\nconst previousData = $('Process Search').item.json;\n\nconst companyId = apiResponse.results?.[0]?.toObjectId || null;\n\nreturn {\n  json: {\n    ...previousData,\n    company_id: companyId\n  }\n};"
       },
       "id": "extract-company",
       "name": "Extract Company ID",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2250, 100]
+      "position": [
+        2272,
+        112
+      ]
     },
     {
       "parameters": {
-        "method": "GET",
-        "url": "=https://api.hubapi.com/crm/v3/objects/companies/{{ $json.company_id }}?properties=name,hubspot_owner_id",
-        "authentication": "none",
-        "sendHeaders": true,
-        "headerParameters": {"parameters": [{"name": "Authorization", "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"}]},
-        "options": {"batching": {"batch": {"batchSize": 1, "batchInterval": 300}}}
-      },
-      "id": "get-company",
-      "name": "Get Company",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2500, 100]
-    },
-    {
-      "parameters": {
-        "method": "GET",
         "url": "=https://api.hubapi.com/crm/v3/owners/{{ $json.properties.hubspot_owner_id }}",
-        "authentication": "none",
         "sendHeaders": true,
-        "headerParameters": {"parameters": [{"name": "Authorization", "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"}]},
-        "options": {"batching": {"batch": {"batchSize": 1, "batchInterval": 300}}}
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 300
+            }
+          }
+        }
       },
       "id": "get-owner",
       "name": "Get Owner",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2750, 100]
+      "position": [
+        2752,
+        112
+      ]
     },
     {
       "parameters": {
-        "jsCode": "// Process ALL items\nconst allInputs = $input.all();\nconst allCompany = $('Get Company').all();\nconst allExtract = $('Extract Company ID').all();\nconst results = [];\n\nfor (let i = 0; i < allInputs.length; i++) {\n  const owner = allInputs[i].json;\n  const company = allCompany[i]?.json || {};\n  const eprData = allExtract[i]?.json || {};\n  \n  const ownerEmail = (owner.email || '').toLowerCase();\n  \n  if (ownerEmail === 'nick.white@usan.org') {\n    results.push({\n      json: {\n        ...eprData,\n        skip: true,\n        skip_reason: 'Nick company - excluded from automation',\n        owner_email: ownerEmail,\n        company_name: company.properties?.name || ''\n      }\n    });\n  } else {\n    results.push({\n      json: {\n        ...eprData,\n        skip: false,\n        owner_email: ownerEmail,\n        company_name: company.properties?.name || '',\n        owner_id: company.properties?.hubspot_owner_id\n      }\n    });\n  }\n}\n\nreturn results;"
+        "mode": "runOnceForEachItem",
+        "jsCode": "const owner = $input.item.json;\nconst company = $('Get Company').item.json;\nconst extractData = $('Extract Company ID').item.json;\n\nconst ownerEmail = (owner.email || '').toLowerCase();\nconst membershipState = (company.properties?.membership_state || 'California').toLowerCase();\n\n// Normalize state to CA or NV\nlet state = 'CA';\nif (membershipState.includes('nevada') || membershipState === 'nv') {\n  state = 'NV';\n}\n\nif (ownerEmail === 'nick.white@usan.org') {\n  return {\n    json: {\n      ...extractData,\n      skip: true,\n      skip_reason: 'Nick company - excluded from automation',\n      owner_email: ownerEmail,\n      company_name: company.properties?.name || '',\n      state: state\n    }\n  };\n} else {\n  return {\n    json: {\n      ...extractData,\n      skip: false,\n      owner_email: ownerEmail,\n      company_name: company.properties?.name || '',\n      owner_id: company.properties?.hubspot_owner_id,\n      state: state\n    }\n  };\n}"
       },
       "id": "check-owner",
       "name": "Check Owner",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3000, 100]
+      "position": [
+        3008,
+        112
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
-          "conditions": [{"id": "not-skip", "leftValue": "={{ $json.skip }}", "rightValue": false, "operator": {"type": "boolean", "operation": "equals"}}],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "not-skip",
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
           "combinator": "and"
-        }
+        },
+        "options": {}
       },
       "id": "check-skip",
       "name": "Not Skipped?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [3250, 100]
+      "position": [
+        3264,
+        112
+      ]
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "=https://api.hubapi.com/crm/v4/objects/2-35681060/{{ $json.hubspot_station_id }}/associations/contacts",
-        "authentication": "none",
         "sendHeaders": true,
-        "headerParameters": {"parameters": [{"name": "Authorization", "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"}]},
-        "options": {"batching": {"batch": {"batchSize": 1, "batchInterval": 300}}}
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 300
+            }
+          }
+        }
       },
       "id": "get-contacts",
       "name": "Get Contacts",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [3500, 0]
+      "position": [
+        3504,
+        0
+      ]
     },
     {
       "parameters": {
-        "jsCode": "// Process ALL items\nconst allInputs = $input.all();\nconst allCheckOwner = $('Check Owner').all();\nconst results = [];\n\nfor (let i = 0; i < allInputs.length; i++) {\n  const assoc = allInputs[i].json;\n  const eprData = allCheckOwner[i]?.json || {};\n  \n  const memberRep = assoc.results?.find(a => \n    a.associationTypes?.some(t => t.typeId === 36 || t.label === 'Member Representative')\n  );\n  \n  const contactId = memberRep?.toObjectId || assoc.results?.[0]?.toObjectId;\n  \n  if (!contactId) {\n    results.push({\n      json: {\n        ...eprData,\n        contact_found: false,\n        skip_reason: 'No contact found'\n      }\n    });\n  } else {\n    results.push({\n      json: {\n        ...eprData,\n        contact_found: true,\n        contact_id: contactId\n      }\n    });\n  }\n}\n\nreturn results;"
+        "mode": "runOnceForEachItem",
+        "jsCode": "const apiResponse = $input.item.json;  // From Get Contacts HTTP\nconst previousData = $('Check Owner').item.json;  // Paired item\n\nconst memberRep = apiResponse.results?.find(a => \n  a.associationTypes?.some(t => t.typeId === 36 || t.label === 'Member Representative')\n);\n\nconst contactId = memberRep?.toObjectId || apiResponse.results?.[0]?.toObjectId;\n\nif (!contactId) {\n  return {\n    json: {\n      ...previousData,\n      contact_found: false,\n      skip_reason: 'No contact found'\n    }\n  };\n} else {\n  return {\n    json: {\n      ...previousData,\n      contact_found: true,\n      contact_id: contactId\n    }\n  };\n}"
       },
       "id": "find-contact",
       "name": "Find Contact",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3750, 0]
+      "position": [
+        3760,
+        0
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
-          "conditions": [{"id": "has-contact", "leftValue": "={{ $json.contact_found }}", "rightValue": true, "operator": {"type": "boolean", "operation": "equals"}}],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-contact",
+              "leftValue": "={{ $json.contact_found }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
           "combinator": "and"
-        }
+        },
+        "options": {}
       },
       "id": "check-contact",
       "name": "Has Contact?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [4000, 0]
+      "position": [
+        4000,
+        0
+      ]
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "=https://api.hubapi.com/crm/v3/objects/contacts/{{ $json.contact_id }}?properties=firstname,lastname,email",
-        "authentication": "none",
         "sendHeaders": true,
-        "headerParameters": {"parameters": [{"name": "Authorization", "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"}]},
-        "options": {"batching": {"batch": {"batchSize": 1, "batchInterval": 300}}}
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 300
+            }
+          }
+        }
       },
       "id": "get-contact-details",
       "name": "Get Contact Details",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [4250, -100]
+      "position": [
+        4256,
+        -96
+      ]
     },
     {
       "parameters": {
-        "jsCode": "// Process ALL items\nconst allInputs = $input.all();\nconst allFindContact = $('Find Contact').all();\nconst results = [];\n\nfor (let i = 0; i < allInputs.length; i++) {\n  const contact = allInputs[i].json;\n  const eprData = allFindContact[i]?.json || {};\n  \n  const firstName = contact.properties?.firstname || (eprData.member_name || '').split(' ')[0];\n  const email = contact.properties?.email;\n  \n  if (!email) {\n    results.push({\n      json: {\n        ...eprData,\n        skip: true,\n        skip_reason: 'Contact has no email'\n      }\n    });\n  } else {\n    results.push({\n      json: {\n        ...eprData,\n        first_name: firstName,\n        last_name: contact.properties?.lastname || '',\n        email: email,\n        contact_name: `${firstName} ${contact.properties?.lastname || ''}`.trim()\n      }\n    });\n  }\n}\n\nreturn results;"
+        "mode": "runOnceForEachItem",
+        "jsCode": "const contact = $input.item.json;  // From Get Contact Details HTTP\nconst previousData = $('Find Contact').item.json;  // Paired item\n\nconst firstName = contact.properties?.firstname || (previousData.member_name || '').split(' ')[0];\nconst email = contact.properties?.email;\n\nif (!email) {\n  return {\n    json: {\n      ...previousData,\n      skip: true,\n      skip_reason: 'Contact has no email'\n    }\n  };\n} else {\n  return {\n    json: {\n      ...previousData,\n      first_name: firstName,\n      last_name: contact.properties?.lastname || '',\n      email: email,\n      contact_name: `${firstName} ${contact.properties?.lastname || ''}`.trim()\n    }\n  };\n}"
       },
       "id": "merge-contact",
       "name": "Merge Contact",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4500, -100]
+      "position": [
+        4512,
+        -96
+      ]
     },
     {
       "parameters": {
-        "jsCode": "// Process ALL items\nconst allInputs = $input.all();\nconst results = [];\n\n// ============ TEST MODE CONFIG ============\nconst TEST_MODE = true;\nconst TEST_EMAIL = 'christian.olesen@usan.org';\n// ==========================================\n\nconst REP_DETAILS = {\n  'christian.olesen@usan.org': { name: 'Christian Olesen', title: 'Member Services Specialist', phone: 'REDACTED_PHONE', calendly: 'https://calendly.com/christian-olesen-usan/30min', calendlyText: \"Christian's Availability\" },\n  'germain.suess@usan.org': { name: 'Germain Suess', title: 'Member Services Specialist', phone: 'REDACTED_PHONE', calendly: 'https://calendly.com/germain-usan/yearly-membership-review', calendlyText: \"Germain's Availability\" },\n  'trevor.harris@usan.org': { name: 'Trevor Harris', title: 'Member Services Lead', phone: 'REDACTED_PHONE', calendly: 'https://calendly.com/trevor-harris-kr8/yearly-membership-review', calendlyText: \"Trevor's Availability\" }\n};\n\nconst LOGO_URL = 'https://i.imgur.com/v6diEdK.jpg';\nconst BANNER_URL = 'https://i.imgur.com/HfkbUwp.png';\n\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.repCounts) staticData.repCounts = {};\n\nfor (const item of allInputs) {\n  const data = item.json;\n  \n  if (!data.email || data.skip) {\n    results.push({ json: { ...data, skip: true } });\n    continue;\n  }\n  \n  const ownerEmail = (data.owner_email || '').toLowerCase();\n  const rep = REP_DETAILS[ownerEmail] || REP_DETAILS['christian.olesen@usan.org'];\n  const repKey = ownerEmail || 'christian.olesen@usan.org';\n  staticData.repCounts[repKey] = (staticData.repCounts[repKey] || 0) + 1;\n  \n  if (staticData.repCounts[repKey] > 10) {\n    results.push({ json: { ...data, skip: true, skip_reason: `Rep ${rep.name} has reached 10 emails this run`, rep_name: rep.name } });\n    continue;\n  }\n  \n  const SIGNATURE_HTML = `<p style=\"font-family: Aptos, sans-serif; font-size: 12pt;\">Thank you,</p><br><table cellspacing=\"0\" cellpadding=\"0\" style=\"border-collapse: collapse;\"><tr><td style=\"padding-right: 15px; vertical-align: top; border-right: 1.5pt solid #000;\"><img src=\"${LOGO_URL}\" alt=\"USAN 811\" width=\"175\" style=\"max-width: 175px;\"></td><td style=\"padding-left: 15px; vertical-align: top;\"><p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><b>${rep.name}</b></p><p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">${rep.title}</p><p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">${rep.phone}</p><p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><a href=\"http://www.undergroundservicealert.org/\" style=\"color: #0563c1;\">undergroundservicealert.org</a></p><p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">4005 Port Chicago Hwy #100 Concord, CA 94520</p><p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><a href=\"${rep.calendly}\" style=\"color: #4c94d8;\"><b>${rep.calendlyText}</b></a></p></td></tr></table><br><a href=\"https://www.undergroundservicealert.org/damage-prevention-portal/\"><img src=\"${BANNER_URL}\" alt=\"NEW Damage Prevention Portal\" width=\"450\" style=\"max-width: 450px;\"></a><br><br><p style=\"font-size: 9pt; color: #666; font-family: Aptos, sans-serif;\">This message contains confidential information and is intended only for the intended recipients. If you are not an intended recipient you should not disseminate, distribute or copy this e-mail. Please notify us immediately by e-mail if you have received this e-mail by mistake and delete this e-mail from your system.</p>`;\n  \n  const emailBody = `<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head><body style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\"><p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\"><strong>${data.first_name}</strong>,</p><p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt; background-color: #FFFF00; padding: 5px; display: inline-block;\"><strong>Your current EPR response rate: ${data.response_rate}%</strong> (${data.responses_sent} of ${data.responses_needed} responses)</p><p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">Just reaching out because Electronic Positive Responses are still not being posted on the tickets that <strong>${data.member_name}</strong> is receiving.</p><p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt; margin: 15px 0; padding: 10px; border-left: 3px solid #ccc; background: #f9f9f9;\"><em>4216.3.(c) (1) (A) Every operator shall supply an electronic positive response through the regional notification center before the legal excavation start date and time.</em> — <a href=\"https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?lawCode=GOV&division=5.&title=1.&part=&chapter=3.1.&article=2\">California Government Code 4216</a></p><p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">To be in compliance you will need to post EPR on all tickets that you have received. By being out of compliance, <strong>mandatory training and/or fines can be imposed by the Underground Safety Board</strong>.</p><p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">To post EPR on the tickets that you receive please login to the Damage Prevention Portal and follow the instructions in our video:</p><ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\"><li><strong>CA DPP Login:</strong> <a href=\"https://appsca.undergroundservicealert.org/pcadmin/Account/Login\">https://appsca.undergroundservicealert.org/pcadmin/Account/Login</a></li><li><strong>How to use Electronic Positive Response:</strong> <a href=\"https://www.youtube.com/watch?v=c1b6HlX-fx4\">https://www.youtube.com/watch?v=c1b6HlX-fx4</a></li></ul><p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">If you would like to schedule a meeting with me, here is my availability: <a href=\"${rep.calendly}\"><strong>Schedule a Meeting</strong></a></p><p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">Please let me know if you have any questions.</p>${SIGNATURE_HTML}</body></html>`;\n  \n  let subject = `${data.first_name}, EPR Compliance - Action Required (${data.response_rate}%)`;\n  let finalEmail = data.email;\n  let finalBody = emailBody;\n  \n  if (TEST_MODE) {\n    finalEmail = TEST_EMAIL;\n    subject = `[TEST] ${subject}`;\n    const testBanner = `<div style=\"background-color: #ff6b6b; color: white; padding: 15px; margin-bottom: 20px; border-radius: 5px; font-family: Arial, sans-serif;\"><strong>TEST MODE - This email would be sent to:</strong><br><strong>Recipient:</strong> ${data.email}<br><strong>Contact:</strong> ${data.contact_name || data.first_name}<br><strong>Member:</strong> ${data.member_name}<br><strong>Rep:</strong> ${rep.name}</div>`;\n    finalBody = emailBody.replace('<body style', '<body style').replace('11pt;\"><p', '11pt;\">' + testBanner + '<p');\n  }\n  \n  results.push({ json: { ...data, skip: false, email: finalEmail, original_email: data.email, email_subject: subject, email_body: finalBody, rep_name: rep.name, test_mode: TEST_MODE } });\n}\n\nreturn results;"
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = $input.item.json;\n\n// ============ TEST MODE CONFIG ============\nconst TEST_MODE = true;\nconst TEST_EMAIL = 'christian.olesen@usan.org';\n// ==========================================\n\n// Skip if no email or already marked skip\nif (!data.email || data.skip) {\n  return { json: { ...data, skip: true } };\n}\n\n// ============ REP DETAILS ============\nconst REP_DETAILS = {\n  'christian.olesen@usan.org': { name: 'Christian Olesen', title: 'Member Services Specialist', phone: 'REDACTED_PHONE', calendly: 'https://calendly.com/christian-olesen-usan/30min', calendlyText: \"Christian's Availability\" },\n  'germain.suess@usan.org': { name: 'Germain Suess', title: 'Member Services Specialist', phone: 'REDACTED_PHONE', calendly: 'https://calendly.com/germain-usan/yearly-membership-review', calendlyText: \"Germain's Availability\" },\n  'trevor.harris@usan.org': { name: 'Trevor Harris', title: 'Member Services Lead', phone: 'REDACTED_PHONE', calendly: 'https://calendly.com/trevor-harris-kr8/yearly-membership-review', calendlyText: \"Trevor's Availability\" }\n};\n\n// ============ STATE TEMPLATES ============\nconst STATE_CONFIG = {\n  'CA': {\n    legalCitation: '4216.3.(c) (1) (A) Every operator shall supply an electronic positive response through the regional notification center before the legal excavation start date and time.',\n    legalUrl: 'https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?lawCode=GOV&division=5.&title=1.&part=&chapter=3.1.&article=2',\n    legalName: 'California Government Code 4216',\n    complianceWarning: 'By being out of compliance, <strong>mandatory training and/or fines can be imposed by the Underground Safety Board</strong>.',\n    portalUrl: 'https://appsca.undergroundservicealert.org/pcadmin/Account/Login',\n    portalName: 'CA DPP Login'\n  },\n  'NV': {\n    legalCitation: 'Please monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP) as required by NRS 455.',\n    legalUrl: 'https://www.leg.state.nv.us/nrs/nrs-455.html',\n    legalName: 'Nevada Revised Statutes 455',\n    complianceWarning: 'The Nevada Public Utilities Commission (PUC) monitors EPR compliance and may investigate members not utilizing the EPR system, which could result in potential fines.',\n    portalUrl: 'https://appsnv.undergroundservicealert.org/pcadmin/Account/Login',\n    portalName: 'NV DPP Login'\n  }\n};\n\nconst LOGO_URL = 'https://i.imgur.com/v6diEdK.jpg';\nconst BANNER_URL = 'https://i.imgur.com/HfkbUwp.png';\n\n// ============ REP LIMIT CHECK ============\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.repCounts) staticData.repCounts = {};\n\nconst ownerEmail = (data.owner_email || '').toLowerCase();\nconst rep = REP_DETAILS[ownerEmail] || REP_DETAILS['christian.olesen@usan.org'];\nconst repKey = ownerEmail || 'christian.olesen@usan.org';\n\nstaticData.repCounts[repKey] = (staticData.repCounts[repKey] || 0) + 1;\n\nif (staticData.repCounts[repKey] > 10) {\n  return { json: { ...data, skip: true, skip_reason: `Rep ${rep.name} has reached 10 emails this run`, rep_name: rep.name } };\n}\n\n// ============ STATE CONFIG ============\nconst state = data.state || 'CA';\nconst stateConfig = STATE_CONFIG[state] || STATE_CONFIG['CA'];\n\n// ============ GAUGE CHART ============\nconst responseRate = parseInt(data.response_rate) || 0;\nconst gaugeColor = responseRate >= 90 ? '%234CAF50' :\n                   responseRate >= 75 ? '%238BC34A' :\n                   responseRate >= 50 ? '%23FFC107' :\n                   responseRate >= 20 ? '%23FF9800' :\n                   '%23F44336';\n\nconst gaugeConfig = {\n  type: 'radialGauge',\n  data: { datasets: [{ data: [responseRate], backgroundColor: gaugeColor.replace(/%23/g, '#') }] },\n  options: { \n    centerPercentage: 80,\n    centerArea: { text: responseRate + '%', fontColor: '#333', fontSize: 24 },\n    trackColor: '#e0e0e0'\n  }\n};\nconst gaugeUrl = 'https://quickchart.io/chart?c=' + encodeURIComponent(JSON.stringify(gaugeConfig)) + '&w=200&h=200';\n\n// Grade message based on response rate\nlet gradeMessage = '';\nlet gradeColor = '#333';\nif (responseRate >= 90) {\n  gradeMessage = 'Compliant';\n  gradeColor = '#4CAF50';\n} else if (responseRate >= 75) {\n  gradeMessage = 'Almost There';\n  gradeColor = '#8BC34A';\n} else if (responseRate >= 50) {\n  gradeMessage = 'Needs Improvement';\n  gradeColor = '#FFC107';\n} else if (responseRate >= 20) {\n  gradeMessage = 'Needs Attention';\n  gradeColor = '#FF9800';\n} else {\n  gradeMessage = 'Critical - Action Required';\n  gradeColor = '#F44336';\n}\n\n// ============ SIGNATURE ============\nconst SIGNATURE_HTML = `<p style=\"font-family: Aptos, sans-serif; font-size: 12pt;\">Thank you,</p><br><table cellspacing=\"0\" cellpadding=\"0\" style=\"border-collapse: collapse;\"><tr><td style=\"padding-right: 15px; vertical-align: top; border-right: 1.5pt solid #000;\"><img src=\"${LOGO_URL}\" alt=\"USAN 811\" width=\"175\" style=\"max-width: 175px;\"></td><td style=\"padding-left: 15px; vertical-align: top;\"><p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><b>${rep.name}</b></p><p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">${rep.title}</p><p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">${rep.phone}</p><p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><a href=\"http://www.undergroundservicealert.org/\" style=\"color: #0563c1;\">undergroundservicealert.org</a></p><p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">4005 Port Chicago Hwy #100 Concord, CA 94520</p><p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><a href=\"${rep.calendly}\" style=\"color: #4c94d8;\"><b>${rep.calendlyText}</b></a></p></td></tr></table><br><a href=\"https://www.undergroundservicealert.org/damage-prevention-portal/\"><img src=\"${BANNER_URL}\" alt=\"NEW Damage Prevention Portal\" width=\"450\" style=\"max-width: 450px;\"></a><br><br><p style=\"font-size: 9pt; color: #666; font-family: Aptos, sans-serif;\">This message contains confidential information and is intended only for the intended recipients. If you are not an intended recipient you should not disseminate, distribute or copy this e-mail. Please notify us immediately by e-mail if you have received this e-mail by mistake and delete this e-mail from your system.</p>`;\n\n// ============ BUILD EMAIL BODY ============\nconst emailBody = `<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head><body style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\"><strong>${data.first_name}</strong>,</p>\n\n<div style=\"text-align: center; margin: 20px 0; padding: 20px; background: #f5f5f5; border-radius: 8px;\">\n  <img src=\"${gaugeUrl}\" alt=\"Your EPR Score: ${responseRate}%\" width=\"200\" height=\"200\" style=\"display: block; margin: 0 auto;\">\n  <p style=\"font-size: 16pt; font-weight: bold; color: ${gradeColor}; margin: 10px 0 5px 0;\">${gradeMessage}</p>\n  <p style=\"font-size: 11pt; color: #666; margin: 0;\">Your EPR Response Rate: <strong>${responseRate}%</strong></p>\n  <p style=\"font-size: 10pt; color: #888; margin: 5px 0 0 0;\">(${data.responses_sent} of ${data.responses_needed} responses)</p>\n</div>\n\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">Just reaching out because Electronic Positive Responses are still not being posted on the tickets that <strong>${data.member_name}</strong> is receiving.</p>\n\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt; margin: 15px 0; padding: 10px; border-left: 3px solid #ccc; background: #f9f9f9;\"><em>${stateConfig.legalCitation}</em> — <a href=\"${stateConfig.legalUrl}\">${stateConfig.legalName}</a></p>\n\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">${stateConfig.complianceWarning}</p>\n\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">To post EPR on the tickets that you receive please login to the Damage Prevention Portal and follow the instructions in our video:</p>\n\n<ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n<li><strong>${stateConfig.portalName}:</strong> <a href=\"${stateConfig.portalUrl}\">${stateConfig.portalUrl}</a></li>\n<li><strong>How to use Electronic Positive Response:</strong> <a href=\"https://www.youtube.com/watch?v=c1b6HlX-fx4\">https://www.youtube.com/watch?v=c1b6HlX-fx4</a></li>\n</ul>\n\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">If you would like to schedule a meeting with me, here is my availability: <a href=\"${rep.calendly}\"><strong>Schedule a Meeting</strong></a></p>\n\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">Please let me know if you have any questions.</p>\n\n${SIGNATURE_HTML}\n</body></html>`;\n\n// ============ FINALIZE ============\nlet subject = `${data.first_name}, EPR Compliance - Action Required (${responseRate}%)`;\nlet finalEmail = data.email;\nlet finalBody = emailBody;\n\nif (TEST_MODE) {\n  finalEmail = TEST_EMAIL;\n  subject = `[TEST-${state}] ${subject}`;\n  const testBanner = `<div style=\"background-color: #ff6b6b; color: white; padding: 15px; margin-bottom: 20px; border-radius: 5px; font-family: Arial, sans-serif;\"><strong>TEST MODE - This email would be sent to:</strong><br><strong>Recipient:</strong> ${data.email}<br><strong>Contact:</strong> ${data.contact_name || data.first_name}<br><strong>Member:</strong> ${data.member_name}<br><strong>Rep:</strong> ${rep.name}<br><strong>State:</strong> ${state}</div>`;\n  finalBody = emailBody.replace('<body style=\"font-family:', '<body style=\"font-family:').replace('11pt;\">', '11pt;\">' + testBanner);\n}\n\nreturn { \n  json: { \n    ...data, \n    skip: false, \n    email: finalEmail, \n    original_email: data.email, \n    email_subject: subject, \n    email_body: finalBody, \n    rep_name: rep.name, \n    state: state,\n    test_mode: TEST_MODE \n  } \n};"
       },
       "id": "build-email",
       "name": "Build Email",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4750, -100]
+      "position": [
+        4752,
+        -96
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
-          "conditions": [{"id": "send", "leftValue": "={{ $json.skip }}", "rightValue": false, "operator": {"type": "boolean", "operation": "equals"}}],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "send",
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
           "combinator": "and"
-        }
+        },
+        "options": {}
       },
       "id": "should-send",
       "name": "Should Send?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [5000, -100]
+      "position": [
+        5008,
+        -96
+      ]
     },
     {
       "parameters": {
@@ -297,62 +507,294 @@
       "name": "Send Email",
       "type": "n8n-nodes-base.mailgun",
       "typeVersion": 1,
-      "position": [5250, -200],
+      "position": [
+        5264,
+        -208
+      ],
       "credentials": {
-        "mailgunApi": {"id": "mailgun_api", "name": "Mailgun account 2"}
+        "mailgunApi": {
+          "id": "X5dvEaypRX7iFuUG",
+          "name": "Mailgun account 2"
+        }
       },
       "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "jsCode": "// Process ALL items\nconst allInputs = $input.all();\nconst now = new Date().toISOString();\nconst results = [];\n\nfor (const item of allInputs) {\n  const data = item.json;\n  results.push({\n    json: {\n      member_name: data.member_name,\n      station_code: data.station_code,\n      email: data.original_email || data.email,\n      sent_to: data.email,\n      contact_name: data.contact_name,\n      response_rate: data.response_rate,\n      rep_name: data.rep_name,\n      status: data.test_mode ? 'test_sent' : 'sent',\n      sent_at: now\n    }\n  });\n}\n\nreturn results;"
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Mailgun output has no data - get it from Should Send? using paired item\nconst mailgunResponse = $input.item.json;\nconst emailData = $('Should Send?').item.json;\n\nconst now = new Date().toISOString();\n\nreturn {\n  json: {\n    member_name: emailData.member_name,\n    station_code: emailData.station_code,\n    email: emailData.original_email || emailData.email,\n    sent_to: emailData.email,\n    contact_name: emailData.contact_name,\n    response_rate: emailData.response_rate,\n    rep_name: emailData.rep_name,\n    status: emailData.test_mode ? 'test_sent' : 'sent',\n    sent_at: now\n  }\n};"
       },
       "id": "prep-log-sent",
       "name": "Prep Log (Sent)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [5500, -200]
+      "position": [
+        5504,
+        -208
+      ]
     },
     {
       "parameters": {
         "operation": "append",
-        "documentId": {"__rl": true, "mode": "id", "value": "1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI"},
-        "sheetName": {"__rl": true, "mode": "name", "value": "outreach_log"},
-        "columns": {"mappingMode": "autoMapInputData", "value": {}}
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI/edit?gid=1583588067#gid=1583588067",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1583588067,
+          "mode": "list",
+          "cachedResultName": "outreach_log ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI/edit#gid=1583588067"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "A",
+              "displayName": "A",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "B",
+              "displayName": "B",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "C",
+              "displayName": "C",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "D",
+              "displayName": "D",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "E",
+              "displayName": "E",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "F",
+              "displayName": "F",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "G",
+              "displayName": "G",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "H",
+              "displayName": "H",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "I",
+              "displayName": "I",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "member_name",
+              "displayName": "member_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "station_code",
+              "displayName": "station_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "sent_to",
+              "displayName": "sent_to",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "contact_name",
+              "displayName": "contact_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "response_rate",
+              "displayName": "response_rate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "rep_name",
+              "displayName": "rep_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "sent_at",
+              "displayName": "sent_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
       },
       "id": "log-sent",
       "name": "Log Sent",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
-      "position": [5750, -200],
+      "position": [
+        5760,
+        -208
+      ],
       "credentials": {
-        "googleSheetsOAuth2Api": {"id": "google_sheets", "name": "google_sheets"}
+        "googleSheetsOAuth2Api": {
+          "id": "hNgQTykrjXrpQiwu",
+          "name": "Google Sheets account"
+        }
       }
     },
     {
       "parameters": {
-        "jsCode": "// Process ALL items\nconst allInputs = $input.all();\nconst now = new Date().toISOString();\nconst results = [];\n\nfor (const item of allInputs) {\n  const data = item.json;\n  results.push({\n    json: {\n      member_name: data.member_name,\n      station_code: data.station_code,\n      email: data.email || 'N/A',\n      response_rate: data.response_rate,\n      rep_name: data.rep_name || 'N/A',\n      status: 'send_failed',\n      sent_at: now\n    }\n  });\n}\n\nreturn results;"
+        "mode": "runOnceForEachItem",
+        "jsCode": "const emailData = $('Should Send?').item.json;\nconst now = new Date().toISOString();\n\nreturn {\n  json: {\n    member_name: emailData.member_name,\n    station_code: emailData.station_code,\n    email: emailData.email || 'N/A',\n    response_rate: emailData.response_rate,\n    rep_name: emailData.rep_name || 'N/A',\n    status: 'send_failed',\n    sent_at: now\n  }\n};"
       },
       "id": "prep-log-failed",
       "name": "Prep Log (Failed)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [5500, 0]
+      "position": [
+        5504,
+        0
+      ]
     },
     {
       "parameters": {
         "operation": "append",
-        "documentId": {"__rl": true, "mode": "id", "value": "1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI"},
-        "sheetName": {"__rl": true, "mode": "name", "value": "outreach_log"},
-        "columns": {"mappingMode": "autoMapInputData", "value": {}}
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI/edit?gid=1583588067#gid=1583588067",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "outreach_log",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
       },
       "id": "log-failed",
       "name": "Log Failed",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
-      "position": [5750, 0],
+      "position": [
+        5760,
+        0
+      ],
       "credentials": {
-        "googleSheetsOAuth2Api": {"id": "google_sheets", "name": "google_sheets"}
+        "googleSheetsOAuth2Api": {
+          "id": "hNgQTykrjXrpQiwu",
+          "name": "Google Sheets account"
+        }
       }
     },
     {
@@ -363,22 +805,232 @@
       "name": "Prep Log (Skipped)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3500, 300]
+      "position": [
+        3504,
+        304
+      ]
     },
     {
       "parameters": {
         "operation": "append",
-        "documentId": {"__rl": true, "mode": "id", "value": "1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI"},
-        "sheetName": {"__rl": true, "mode": "name", "value": "outreach_log"},
-        "columns": {"mappingMode": "autoMapInputData", "value": {}}
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI/edit?gid=1583588067#gid=1583588067",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1583588067,
+          "mode": "list",
+          "cachedResultName": "outreach_log ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI/edit#gid=1583588067"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "A",
+              "displayName": "A",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "B",
+              "displayName": "B",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "C",
+              "displayName": "C",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "D",
+              "displayName": "D",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "E",
+              "displayName": "E",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "F",
+              "displayName": "F",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "G",
+              "displayName": "G",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "H",
+              "displayName": "H",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "I",
+              "displayName": "I",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "member_name",
+              "displayName": "member_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "station_code",
+              "displayName": "station_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sent_to",
+              "displayName": "sent_to",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "contact_name",
+              "displayName": "contact_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "response_rate",
+              "displayName": "response_rate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "rep_name",
+              "displayName": "rep_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sent_at",
+              "displayName": "sent_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "skip_reason",
+              "displayName": "skip_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "processed_at",
+              "displayName": "processed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
       },
       "id": "log-skipped",
       "name": "Log Skipped",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
-      "position": [3750, 300],
+      "position": [
+        3760,
+        304
+      ],
       "credentials": {
-        "googleSheetsOAuth2Api": {"id": "google_sheets", "name": "google_sheets"}
+        "googleSheetsOAuth2Api": {
+          "id": "hNgQTykrjXrpQiwu",
+          "name": "Google Sheets account"
+        }
       }
     },
     {
@@ -389,36 +1041,390 @@
       "name": "No Candidates",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1250, 400]
+      "position": [
+        1264,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hubapi.com/crm/v3/objects/companies/{{ $json.company_id }}?properties=name,hubspot_owner_id,membership_state",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 300
+            }
+          }
+        }
+      },
+      "id": "44bc7f2d-9efa-4c8d-955a-264ead34a22b",
+      "name": "Get Company",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2512,
+        -64
+      ]
     }
   ],
+  "pinData": {},
   "connections": {
-    "Manual Trigger": {"main": [[{"node": "Fetch EPR Data", "type": "main", "index": 0}, {"node": "Fetch Outreach Log", "type": "main", "index": 0}]]},
-    "Fetch EPR Data": {"main": [[{"node": "Merge Data", "type": "main", "index": 0}]]},
-    "Fetch Outreach Log": {"main": [[{"node": "Merge Data", "type": "main", "index": 1}]]},
-    "Merge Data": {"main": [[{"node": "Filter Candidates", "type": "main", "index": 0}]]},
-    "Filter Candidates": {"main": [[{"node": "Has Candidates?", "type": "main", "index": 0}]]},
-    "Has Candidates?": {"main": [[{"node": "Search HubSpot Station", "type": "main", "index": 0}], [{"node": "No Candidates", "type": "main", "index": 0}]]},
-    "Search HubSpot Station": {"main": [[{"node": "Process Search", "type": "main", "index": 0}]]},
-    "Process Search": {"main": [[{"node": "Found?", "type": "main", "index": 0}]]},
-    "Found?": {"main": [[{"node": "Get Company Assoc", "type": "main", "index": 0}], [{"node": "Prep Log (Skipped)", "type": "main", "index": 0}]]},
-    "Get Company Assoc": {"main": [[{"node": "Extract Company ID", "type": "main", "index": 0}]]},
-    "Extract Company ID": {"main": [[{"node": "Get Company", "type": "main", "index": 0}]]},
-    "Get Company": {"main": [[{"node": "Get Owner", "type": "main", "index": 0}]]},
-    "Get Owner": {"main": [[{"node": "Check Owner", "type": "main", "index": 0}]]},
-    "Check Owner": {"main": [[{"node": "Not Skipped?", "type": "main", "index": 0}]]},
-    "Not Skipped?": {"main": [[{"node": "Get Contacts", "type": "main", "index": 0}], [{"node": "Prep Log (Skipped)", "type": "main", "index": 0}]]},
-    "Get Contacts": {"main": [[{"node": "Find Contact", "type": "main", "index": 0}]]},
-    "Find Contact": {"main": [[{"node": "Has Contact?", "type": "main", "index": 0}]]},
-    "Has Contact?": {"main": [[{"node": "Get Contact Details", "type": "main", "index": 0}], [{"node": "Prep Log (Skipped)", "type": "main", "index": 0}]]},
-    "Get Contact Details": {"main": [[{"node": "Merge Contact", "type": "main", "index": 0}]]},
-    "Merge Contact": {"main": [[{"node": "Build Email", "type": "main", "index": 0}]]},
-    "Build Email": {"main": [[{"node": "Should Send?", "type": "main", "index": 0}]]},
-    "Should Send?": {"main": [[{"node": "Send Email", "type": "main", "index": 0}], [{"node": "Prep Log (Skipped)", "type": "main", "index": 0}]]},
-    "Send Email": {"main": [[{"node": "Prep Log (Sent)", "type": "main", "index": 0}], [{"node": "Prep Log (Failed)", "type": "main", "index": 0}]]},
-    "Prep Log (Sent)": {"main": [[{"node": "Log Sent", "type": "main", "index": 0}]]},
-    "Prep Log (Failed)": {"main": [[{"node": "Log Failed", "type": "main", "index": 0}]]},
-    "Prep Log (Skipped)": {"main": [[{"node": "Log Skipped", "type": "main", "index": 0}]]}
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch EPR Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Outreach Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch EPR Data": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Outreach Log": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Data": {
+      "main": [
+        [
+          {
+            "node": "Filter Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Candidates": {
+      "main": [
+        [
+          {
+            "node": "Has Candidates?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Candidates?": {
+      "main": [
+        [
+          {
+            "node": "Search HubSpot Station",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search HubSpot Station": {
+      "main": [
+        [
+          {
+            "node": "Process Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Search": {
+      "main": [
+        [
+          {
+            "node": "Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Found?": {
+      "main": [
+        [
+          {
+            "node": "Get Company Assoc",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prep Log (Skipped)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Company Assoc": {
+      "main": [
+        [
+          {
+            "node": "Extract Company ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Company ID": {
+      "main": [
+        [
+          {
+            "node": "Get Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Owner": {
+      "main": [
+        [
+          {
+            "node": "Check Owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Owner": {
+      "main": [
+        [
+          {
+            "node": "Not Skipped?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Not Skipped?": {
+      "main": [
+        [
+          {
+            "node": "Get Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prep Log (Skipped)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Contacts": {
+      "main": [
+        [
+          {
+            "node": "Find Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Contact": {
+      "main": [
+        [
+          {
+            "node": "Has Contact?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Contact?": {
+      "main": [
+        [
+          {
+            "node": "Get Contact Details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prep Log (Skipped)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Contact Details": {
+      "main": [
+        [
+          {
+            "node": "Merge Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Contact": {
+      "main": [
+        [
+          {
+            "node": "Build Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Email": {
+      "main": [
+        [
+          {
+            "node": "Should Send?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Send?": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prep Log (Skipped)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        [
+          {
+            "node": "Prep Log (Sent)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prep Log (Failed)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep Log (Sent)": {
+      "main": [
+        [
+          {
+            "node": "Log Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep Log (Failed)": {
+      "main": [
+        [
+          {
+            "node": "Log Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep Log (Skipped)": {
+      "main": [
+        [
+          {
+            "node": "Log Skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Company": {
+      "main": [
+        [
+          {
+            "node": "Get Owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "settings": {"executionOrder": "v1", "saveManualExecutions": true, "saveExecutionProgress": true}
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "25ac9434-91c6-4533-a891-bccd42bbef78",
+  "meta": {
+    "instanceId": "39486d70becb20e2f15ef3a37b6e4d49d57a64aafeffb50c4f42442616721bf5"
+  },
+  "id": "GkaDn3dJcNb56xMY",
+  "tags": []
 }

@@ -1,6 +1,85 @@
-# DPS Alerts Automation System
+# DPS Automation System
 
-A template-first, deterministic automation system for routing DPS (Damage Prevention System) alerts to Member Representatives.
+**Enterprise-grade workflow automation for Damage Prevention System compliance and member outreach**
+
+![n8n](https://img.shields.io/badge/n8n-Workflow%20Automation-orange)
+![HubSpot](https://img.shields.io/badge/HubSpot-CRM%20Integration-ff7a59)
+![Node.js](https://img.shields.io/badge/Node.js-18+-339933)
+![License](https://img.shields.io/badge/License-MIT-blue)
+
+---
+
+## Overview
+
+A production-ready automation system that handles **15,000+ annual DPS alerts** and **EPR compliance outreach** for USAN Member Services. Built with n8n workflow automation, HubSpot CRM integration, and intelligent routing logic.
+
+### Key Metrics
+- **30 automated emails/day** for EPR compliance outreach
+- **Multi-state support** (California & Nevada regulatory compliance)
+- **Dynamic personalization** with QuickChart gauge visualizations
+- **Zero manual intervention** for routine alert routing
+
+---
+
+## Tech Stack
+
+| Category | Technologies |
+|----------|-------------|
+| **Workflow Engine** | n8n (self-hosted) |
+| **CRM** | HubSpot API v3 (Companies, Contacts, Custom Objects) |
+| **Email** | Mailgun API, Microsoft Outlook |
+| **Data Storage** | Google Sheets, PostgreSQL |
+| **Visualization** | QuickChart.io (dynamic gauge charts) |
+| **Version Control** | Git/GitHub |
+
+---
+
+## Features
+
+### 1. DPS Alert Router
+Automatically routes incoming Damage Prevention System alerts to the appropriate Member Representative based on station code assignments.
+
+```
+Email Trigger → Parse Alert → Lookup Rep → Select Template → Forward → Log
+```
+
+### 2. EPR Compliance Escalation
+Proactive outreach system for members with low Electronic Positive Response rates.
+
+**Capabilities:**
+- Pulls non-compliant members from Domo analytics
+- State-specific templates (CA Gov Code 4216 / NV NRS 455)
+- Dynamic gauge charts showing individual EPR scores
+- Intelligent batching (30 contacts/day, 20-day rotation cycle)
+- Outreach cooldown tracking (30-day minimum between contacts)
+- Team workload balancing across representatives
+
+**Sample Email Output:**
+```
+┌─────────────────────────────────────┐
+│  [USAN Logo]     EPR Status Report  │
+├─────────────────────────────────────┤
+│  Hi {Name},                         │
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │    [GAUGE CHART - 73%]     │    │
+│  │    Your Response Rate       │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│  {State-specific legal citation}    │
+│  {Personalized action items}        │
+│                                     │
+│  [SCHEDULE A CALL - BUTTON]         │
+└─────────────────────────────────────┘
+```
+
+### 3. Station Rep Sync
+Daily synchronization of HubSpot station code assignments to local mapping table.
+
+### 4. Dead Letter Handler
+Catches and logs failed workflow executions for manual review.
+
+---
 
 ## Architecture
 
@@ -20,12 +99,91 @@ A template-first, deterministic automation system for routing DPS (Damage Preven
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                      WORKFLOW C: DEAD LETTER HANDLER                         │
+│                      WORKFLOW C: EPR COMPLIANCE                              │
+│                      (Daily Cron or Manual Trigger)                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Domo Data → Filter Candidates → HubSpot Enrichment → Build Email →         │
+│  State Template Selection → Mailgun Send → Google Sheets Log                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      WORKFLOW D: DEAD LETTER HANDLER                         │
 │                      (Error Trigger)                                         │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  Failed Items → Log → Notify Exception Email                                │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## EPR Workflow Details
+
+### State-Specific Compliance
+
+| State | Legal Framework | Portal |
+|-------|-----------------|--------|
+| California | Gov Code 4216.3.(c)(1)(A) | appsca.undergroundservicealert.org |
+| Nevada | NRS 455.080 | appsnv.undergroundservicealert.org |
+
+### Candidate Filtering Logic
+
+```javascript
+// Pseudocode for candidate selection
+candidates = domoData
+  .filter(hasValidEmail)
+  .filter(notContactedWithin30Days)
+  .filter(notExcludedOwner)
+  .sortBy(responseRate, 'ascending')  // Worst performers first
+  .limit(MAX_PER_RUN)                  // 30 per day
+  .balanceAcrossReps()                 // Even distribution
+```
+
+### Dynamic Gauge Generation
+
+Uses QuickChart.io API to generate personalized radial gauge charts:
+
+```javascript
+function generateGaugeChart(percentage) {
+  const color = percentage >= 75 ? '#4CAF50' :
+                percentage >= 50 ? '#FFC107' :
+                percentage >= 25 ? '#FF9800' : '#F44336';
+
+  return `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify({
+    type: 'radialGauge',
+    data: { datasets: [{ data: [percentage], backgroundColor: color }] },
+    options: { centerArea: { text: percentage + '%' } }
+  }))}`;
+}
+```
+
+---
+
+## File Structure
+
+```
+dps-automation/
+├── README.md
+├── package.json
+├── templates/
+│   ├── workflow_station_rep_sync.json      # Daily HubSpot sync
+│   ├── workflow_dps_email_processor.json   # Alert routing
+│   ├── workflow_epr_escalation.json        # EPR compliance outreach
+│   └── workflow_deadletter_handler.json    # Error handling
+├── config/
+│   ├── env.local.json.example
+│   └── env.prod.json.example
+├── rules/
+│   └── templates.json                      # Email templates + match rules
+├── scripts/
+│   ├── deploy_workflows.mjs                # Workflow deployer
+│   └── render_workflow.mjs                 # Template renderer
+├── sql/
+│   └── 001_init.sql                        # PostgreSQL schema
+└── docs/
+    └── troubleshooting.md
+```
+
+---
 
 ## Quick Start
 
@@ -35,171 +193,76 @@ A template-first, deterministic automation system for routing DPS (Damage Preven
 - Node.js 18+
 - HubSpot account with API access
 - Microsoft 365 / Outlook account
-- Either: Google Sheets OR PostgreSQL/Supabase
+- Google Sheets OR PostgreSQL
 
-### 1. Clone and Install
+### Installation
 
 ```bash
-git clone <this-repo>
+git clone https://github.com/cmo333/dps-automation.git
 cd dps-automation
 npm install
-```
-
-### 2. Configure Environment
-
-```bash
-# Copy example config
 cp config/env.local.json.example config/env.local.json
-
-# Edit with your values
-nano config/env.local.json
+# Edit config with your credentials
+npm run deploy
 ```
 
-Required configuration:
+### Required Credentials (n8n)
+
+| Credential | Type | Scope |
+|------------|------|-------|
+| `hubspot_api` | HubSpot Private App | CRM read/write |
+| `outlook_oauth` | Microsoft OAuth2 | Mail.Read, Mail.Send |
+| `google_sheets` | Google OAuth2 | Spreadsheets |
+| `mailgun_api` | Mailgun API | Send emails |
+
+---
+
+## Configuration
+
+### Environment Variables
 
 | Variable | Description |
 |----------|-------------|
-| `N8N_BASE_URL` | Your n8n instance URL (e.g., `https://n8n.yourcompany.com`) |
-| `N8N_API_KEY` | n8n API key (Settings → API → Create API Key) |
+| `N8N_BASE_URL` | Your n8n instance URL |
+| `N8N_API_KEY` | n8n API key |
 | `STORAGE_MODE` | `sheets` or `postgres` |
 | `FALLBACK_EMAIL` | Email for unassigned alerts |
-| `EXCEPTION_EMAIL` | Email for exceptions/errors |
-| `OUTLOOK_MAILBOX` | Member Services shared mailbox |
+| `MAX_PER_RUN` | EPR emails per execution (default: 30) |
+| `COOLDOWN_DAYS` | Days between repeat contacts (default: 30) |
 
-### 3. Set Up n8n Credentials (Manual Step)
+---
 
-In n8n UI, create these credentials:
+## Monitoring & Maintenance
 
-1. **HubSpot API** (name: `hubspot_api`)
-   - Type: HubSpot API
-   - Access Token: Your HubSpot private app token
+### Daily Checks
+- Review n8n execution history for failures
+- Check dead letter queue for stuck items
+- Verify outreach log for successful sends
 
-2. **Microsoft Outlook** (name: `outlook_oauth`)
-   - Type: Microsoft OAuth2
-   - Scope: Mail.Read, Mail.Send, Mail.ReadWrite
+### Manual Triggers
+- **Station Rep Sync**: Run when HubSpot assignments change
+- **EPR Escalation**: Run daily for compliance outreach
 
-3. **Google Sheets** (if using sheets mode, name: `google_sheets`)
-   - Type: Google OAuth2
-   - Scope: spreadsheets
+---
 
-4. **PostgreSQL** (if using postgres mode, name: `postgres_db`)
-   - Type: Postgres
-   - Connection details for your database
+## Contributing
 
-### 4. Initialize Storage
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-**Google Sheets Mode:**
-```bash
-# Create the spreadsheet manually, then add the ID to config
-# Required sheets: station_rep_mapping, alert_log, dead_letter
-```
-
-**PostgreSQL Mode:**
-```bash
-# Run the init script
-psql -h your-host -U your-user -d your-db -f sql/001_init.sql
-```
-
-### 5. Deploy Workflows
-
-```bash
-# Deploy all workflows
-npm run deploy
-
-# Or deploy individually
-npm run deploy:sync      # Station Rep Sync
-npm run deploy:processor # DPS Email Processor
-npm run deploy:deadletter # Dead Letter Handler
-```
-
-### 6. Activate Workflows
-
-In n8n UI:
-1. Open each workflow
-2. Click "Activate" toggle
-3. For Station Rep Sync: manually trigger once to populate initial data
-
-## File Structure
-
-```
-dps-automation/
-├── README.md
-├── package.json
-├── templates/
-│   ├── workflow_station_rep_sync.json      # Workflow A
-│   ├── workflow_dps_email_processor.json   # Workflow B
-│   └── workflow_deadletter_handler.json    # Workflow C
-├── config/
-│   ├── env.local.json.example
-│   └── env.prod.json.example
-├── rules/
-│   └── templates.json                      # Email templates + match rules
-├── scripts/
-│   ├── deploy_workflows.mjs                # Main deployer
-│   └── render_workflow.mjs                 # Template renderer
-├── sql/
-│   └── 001_init.sql                        # PostgreSQL schema
-└── docs/
-    └── troubleshooting.md
-```
-
-## Template System
-
-Templates are defined in `rules/templates.json`. Each template has:
-- `id`: Unique identifier
-- `name`: Human-readable name
-- `match_rules`: Array of conditions (first match wins)
-- `subject_template`: Email subject with placeholders
-- `body_template`: Email body with placeholders
-
-### Match Rule Types
-
-| Type | Example | Description |
-|------|---------|-------------|
-| `notes_contains` | `"no response"` | Notes field contains text |
-| `notes_regex` | `"storm\\s+drain"` | Notes matches regex |
-| `issue_type_equals` | `"No Response"` | Exact issue type match |
-| `issue_type_contains` | `"AOI"` | Issue type contains text |
-
-### Available Placeholders
-
-| Placeholder | Description |
-|-------------|-------------|
-| `{{rep_name}}` | Recipient's name |
-| `{{rep_email}}` | Recipient's email |
-| `{{ticket_number}}` | DPS ticket number |
-| `{{station_codes}}` | Comma-separated codes for this rep |
-| `{{all_station_codes}}` | All codes from the alert |
-| `{{states}}` | Affected states |
-| `{{notes}}` | Additional notes |
-| `{{customer_name}}` | Customer first + last name |
-| `{{alert_id}}` | DPS alert system ID |
-| `{{issue_type}}` | Primary issue type |
-
-## Maintenance
-
-### Manual Sync Trigger
-
-If rep assignments change mid-day:
-1. Open Station Rep Sync workflow in n8n
-2. Click "Execute Workflow"
-
-### Adding New Templates
-
-1. Edit `rules/templates.json`
-2. Add new template object with match rules
-3. Re-deploy: `npm run deploy:processor`
-
-### Monitoring
-
-- Check n8n executions for failures
-- Review dead_letter table/sheet for stuck items
-- Daily digest (if configured) summarizes activity
-
-## Troubleshooting
-
-See [docs/troubleshooting.md](docs/troubleshooting.md)
+---
 
 ## License
 
-MIT
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+## Author
+
+**Christian Olesen**
+Member Services Specialist | Systems Automation
+[GitHub](https://github.com/cmo333)
