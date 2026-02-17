@@ -1,5 +1,11 @@
 // Parse Webhook - Extracts data from Formsite webhook
+// n8n node: "Code in JavaScript"
 // Connect this to the Webhook node output
+//
+// CHANGE LOG:
+// - 2026-02-17: Added HubSpot IN-query validation to filter out English words
+//   extracted from notes (e.g., CUSTOMER, HAS, THREE). Only codes that exist
+//   in HubSpot pass through. Falls back to field-only codes if validation fails.
 
 const webhookData = $input.first().json;
 // Handle both direct items and items nested in body (webhook wrapper)
@@ -76,22 +82,58 @@ function extractCodesFromNotes(notesText) {
 
 const notesCodes = extractCodesFromNotes(notes);
 
-// Combine main codes and notes codes, removing duplicates
-const allCodesSet = new Set([...mainCodes, ...notesCodes]);
-const stationCodes = Array.from(allCodesSet);
+// Combine all candidates (field + notes), deduplicated
+const allCandidates = [...new Set([...mainCodes, ...notesCodes])];
+
+// Validate ALL candidate codes against HubSpot in ONE API call using IN operator.
+// This filters out English words (CUSTOMER, HAS, THREE, etc.) that the loose
+// regex picks up from notes, while keeping real station codes that DPS agents
+// may have typed in the wrong field.
+let validatedCodes = mainCodes; // Default: trust field codes if validation fails
+
+if (notesCodes.length > 0) {
+  try {
+    const response = await fetch('https://api.hubapi.com/crm/v3/objects/2-35681060/search', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ${HUBSPOT_API_KEY}',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        filterGroups: [{
+          filters: [{
+            propertyName: 'station_code',
+            operator: 'IN',
+            values: allCandidates
+          }]
+        }],
+        properties: ['station_code'],
+        limit: 100
+      })
+    });
+
+    const data = await response.json();
+    const validHubSpotCodes = (data.results || [])
+      .map(r => r.properties?.station_code?.toUpperCase())
+      .filter(Boolean);
+
+    validatedCodes = [...new Set(validHubSpotCodes)];
+  } catch (err) {
+    // If validation call fails, fall back to field codes only (safe default)
+    validatedCodes = mainCodes;
+  }
+}
+
+const stationCodes = validatedCodes;
 
 // Extract ticket numbers from notes (12-13 digit numbers that start with 202)
 function extractTicketNumbersFromNotes(notesText) {
   if (!notesText) return [];
-
-  // Match 12-13 digit numbers that look like ticket numbers (typically start with year like 2026, 2025, etc.)
   const matches = notesText.match(/\b20\d{10,11}\b/g) || [];
   return matches;
 }
 
 const notesTickets = extractTicketNumbersFromNotes(notes);
-
-// Combine main ticket number with any found in notes, removing duplicates
 const mainTickets = ticketNumber ? [ticketNumber] : [];
 const allTicketsSet = new Set([...mainTickets, ...notesTickets]);
 const ticketNumbers = Array.from(allTicketsSet);
@@ -110,15 +152,17 @@ return [{
     // Main identifiers
     alert_id: alertId,
     ticket_number: ticketNumber,
-    ticket_numbers: ticketNumbers,  // Array of all ticket numbers (main + from notes)
+    ticket_numbers: ticketNumbers,
 
-    // Station codes as array (combined from main field + notes, deduplicated)
+    // Station codes as array (validated against HubSpot)
     station_codes: stationCodes,
     member_codes: stationCodes,  // Alias for compatibility
 
-    // Debug: show where codes/tickets came from
+    // Debug: show where codes came from and validation results
     _codes_from_field: mainCodes,
     _codes_from_notes: notesCodes,
+    _all_candidates: allCandidates,
+    _validated_codes: validatedCodes,
     _tickets_from_field: mainTickets,
     _tickets_from_notes: notesTickets,
 
