@@ -87,7 +87,7 @@ Changed all 6 HubSpot nodes from credential-based auth to **inline headers**:
   "headerParameters": {
     "parameters": [{
       "name": "Authorization",
-      "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"
+      "value": "Bearer pat-na1-YOUR_HUBSPOT_PAT_HERE"
     }]
   }
 }
@@ -147,7 +147,7 @@ curl -X POST "https://n8n.usan.org/api/v1/workflows" \
 | Item | Value |
 |------|-------|
 | n8n URL | `https://n8n.usan.org` |
-| HubSpot Token | `pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e` |
+| HubSpot Token | `pat-na1-YOUR_HUBSPOT_PAT_HERE` |
 | Station Code Object ID | `2-35681060` |
 | EPR Google Sheet | `1o5V_o6_2B38oNgWGgXmV8nsepxywUWDgNNpzXAmDhhI` |
 | Test Email | `christian.olesen@usan.org` |

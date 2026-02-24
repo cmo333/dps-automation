@@ -140,7 +140,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"
+              "value": "Bearer pat-na1-YOUR_HUBSPOT_PAT_HERE"
             }
           ]
         },
@@ -218,7 +218,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"
+              "value": "Bearer pat-na1-YOUR_HUBSPOT_PAT_HERE"
             }
           ]
         },
@@ -262,7 +262,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"
+              "value": "Bearer pat-na1-YOUR_HUBSPOT_PAT_HERE"
             }
           ]
         },
@@ -338,7 +338,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"
+              "value": "Bearer pat-na1-YOUR_HUBSPOT_PAT_HERE"
             }
           ]
         },
@@ -414,7 +414,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"
+              "value": "Bearer pat-na1-YOUR_HUBSPOT_PAT_HERE"
             }
           ]
         },
@@ -1054,7 +1054,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer pat-na1-b8417df4-5cbf-4924-b4bb-6c819278167e"
+              "value": "Bearer pat-na1-YOUR_HUBSPOT_PAT_HERE"
             }
           ]
         },
