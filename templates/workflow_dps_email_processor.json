@@ -1,5 +1,7 @@
 {
   "name": "DPS Alerts- Email Processor",
+  "description": null,
+  "isArchived": false,
   "nodes": [
     {
       "parameters": {
@@ -148,8 +150,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        784,
-        -80
+        672,
+        -128
       ],
       "id": "06c173b0-e315-4709-a7de-fb4775fea618"
     },
@@ -188,7 +190,8 @@
           "id": "hNgQTykrjXrpQiwu",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -199,7 +202,7 @@
       "typeVersion": 2,
       "position": [
         1312,
-        80
+        176
       ],
       "id": "ea8c4e86-2101-45cd-bc1d-5699ee6c4437"
     },
@@ -218,7 +221,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nconst notes = (data.notes || '').toLowerCase();\nconst issueType = (data.issue_type || '').toLowerCase();\nconst states = (data.states || []).map(s => s.toLowerCase());\nconst isCA = states.some(s => s.includes('california') || s === 'ca');\nconst isNV = states.some(s => s.includes('nevada') || s === 'nv');\nconst isNoResponse = issueType.includes('no response') || notes.includes('no response') || notes.includes('non-response');\nconst isManuallyAdded = issueType.includes('manually added') || issueType.includes('manual add');\nconst isContactIssue = notes.includes('contact') || notes.includes('wrong number') || notes.includes('wrong email') || issueType.includes('contact');\n\nconst templates = [\n  {\n    id: 'no_response_ca',\n    match: () => isCA && isNoResponse,\n    subject: 'No Response Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the form below and reach out to the customer listed to resolve the issue.\\n\\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP) as required by California Code 4216 (https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?lawCode=GOV&division=5.&title=1.&part=&chapter=3.1.&article=2).\\n\\n• How to use Electronic Positive Response - https://www.youtube.com/watch?v=c1b6HlX-fx4\\n\\nThank you,'\n  },\n  {\n    id: 'no_response_nv',\n    match: () => isNV && isNoResponse,\n    subject: 'No Response Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the form below and reach out to the customer listed to resolve the issue.\\n\\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP) as required by NRS 455.\\n\\n• How to use Electronic Positive Response - https://www.youtube.com/watch?v=c1b6HlX-fx4\\n\\nThank you,'\n  },\n  {\n    id: 'no_response_generic',\n    match: () => isNoResponse,\n    subject: 'No Response Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the form below and reach out to the customer listed to resolve the issue.\\n\\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP).\\n\\n• How to use Electronic Positive Response - https://www.youtube.com/watch?v=c1b6HlX-fx4\\n\\nThank you,'\n  },\n  {\n    id: 'contact_info_issue',\n    match: () => isContactIssue,\n    subject: 'Contact Info Issue: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the email below from one of our agents for reference and reach out to the excavator on the ticket to resolve the issue.\\n\\nIf you need to update your Member Contact information within the Damage Prevention Portal, please use the link below to sign in. Then navigate to the station details for your station code (Settings > OneCallAccess).\\n\\nNV DPP Login Page - https://appsnv.undergroundservicealert.org/pcadmin/Account/Login\\nCA DPP Login Page - https://appsca.undergroundservicealert.org/pcadmin/Account/Login?returnUrl=%2Fpcadmin%2FOperations - The Damage Prevention Portal is where you can manage your mapping, contact info, and ticket delivery.\\n\\nContact Information can be found under Settings - OneCallAccess then clicking on your Station Code.\\nThe Member Contact is displayed on each ticket available for the excavator.\\nThe Member IT contact is not displayed on the ticket and is meant for the Member Rep.\\n\\nPlease let me know if you have any questions.\\n\\nThank you,'\n  },\n  {\n    id: 'member_manually_added',\n    match: () => isManuallyAdded,\n    subject: 'Manual Add Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: 'Hello {{rep_name}},\\n\\nPlease review the email below from one of our agents for reference. The station code {{station_codes}} has been manually added to ticket# {{ticket_number}} at the request of the excavator.\\n\\nIf you need to update your Area of Interest, please visit the Damage Prevention Portal using the link below.\\n\\nCA DPP Login Page - https://appsca.undergroundservicealert.org/pcadmin/Account/Login?returnUrl=%2Fpcadmin%2FOperations - The Damage Prevention Portal is where you can manage your mapping, contact info, and ticket delivery.\\n\\nArea of Interest (AOI) can be found under Settings - OneCallAccess and clicking on your Station Code, then clicking on Area of Interest.\\nHere is a video that goes into more detail: How to manage your Area of Interest - https://www.youtube.com/watch?v=KZzHnITi-3Q&feature=youtu.be\\n\\nThank you,'\n  },\n  {\n    id: 'general',\n    match: () => true,\n    subject: 'DPS Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the form below and take appropriate action.\\n\\nTicket Number: {{ticket_number}}\\nStation Code(s): {{station_codes}}\\nState(s): {{states}}\\nIssue Type: {{issue_type}}\\n\\nAdditional Notes:\\n{{notes}}\\n\\nThank you,'\n  }\n];\n\nconst template = templates.find(t => t.match());\n\nreturn [{\n  json: {\n    ...data,\n    template: {\n      id: template.id,\n      subject_template: template.subject,\n      body_template: template.body\n    }\n  }\n}];"
+        "jsCode": "const data = $input.first().json;\nconst notes = (data.notes || '').toLowerCase();\nconst issueType = (data.issue_type || '').toLowerCase();\nconst states = (data.states || []).map(s => s.toLowerCase());\nconst isCA = states.some(s => s.includes('california') || s === 'ca');\nconst isNV = states.some(s => s.includes('nevada') || s === 'nv');\nconst isNoResponse = issueType.includes('no response') || notes.includes('no response') || notes.includes('non-response');\nconst isManuallyAdded = issueType.includes('manually added') || issueType.includes('manual add');\nconst isContactIssue = notes.includes('contact') || notes.includes('wrong number') || notes.includes('wrong email') || issueType.includes('contact');\n\nconst templates = [\n  {\n    id: 'no_response_ca',\n    match: () => isCA && isNoResponse,\n    subject: 'No Response Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the form below and reach out to the customer listed to resolve the issue.\\n\\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP) as required by California Code 4216 (https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?lawCode=GOV&division=5.&title=1.&part=&chapter=3.1.&article=2).\\n\\n\u2022 How to use Electronic Positive Response - https://www.youtube.com/watch?v=c1b6HlX-fx4\\n\\nThank you,'\n  },\n  {\n    id: 'no_response_nv',\n    match: () => isNV && isNoResponse,\n    subject: 'No Response Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the form below and reach out to the customer listed to resolve the issue.\\n\\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP) as required by NRS 455.\\n\\n\u2022 How to use Electronic Positive Response - https://www.youtube.com/watch?v=c1b6HlX-fx4\\n\\nThank you,'\n  },\n  {\n    id: 'no_response_generic',\n    match: () => isNoResponse,\n    subject: 'No Response Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the form below and reach out to the customer listed to resolve the issue.\\n\\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP).\\n\\n\u2022 How to use Electronic Positive Response - https://www.youtube.com/watch?v=c1b6HlX-fx4\\n\\nThank you,'\n  },\n  {\n    id: 'contact_info_issue',\n    match: () => isContactIssue,\n    subject: 'Contact Info Issue: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the email below from one of our agents for reference and reach out to the excavator on the ticket to resolve the issue.\\n\\nIf you need to update your Member Contact information within the Damage Prevention Portal, please use the link below to sign in. Then navigate to the station details for your station code (Settings > OneCallAccess).\\n\\nNV DPP Login Page - https://appsnv.undergroundservicealert.org/pcadmin/Account/Login\\nCA DPP Login Page - https://appsca.undergroundservicealert.org/pcadmin/Account/Login?returnUrl=%2Fpcadmin%2FOperations - The Damage Prevention Portal is where you can manage your mapping, contact info, and ticket delivery.\\n\\nContact Information can be found under Settings - OneCallAccess then clicking on your Station Code.\\nThe Member Contact is displayed on each ticket available for the excavator.\\nThe Member IT contact is not displayed on the ticket and is meant for the Member Rep.\\n\\nPlease let me know if you have any questions.\\n\\nThank you,'\n  },\n  {\n    id: 'member_manually_added',\n    match: () => isManuallyAdded,\n    subject: 'Manual Add Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: 'Hello {{rep_name}},\\n\\nPlease review the email below from one of our agents for reference. The station code {{station_codes}} has been manually added to ticket# {{ticket_number}} at the request of the excavator.\\n\\nIf you need to update your Area of Interest, please visit the Damage Prevention Portal using the link below.\\n\\nCA DPP Login Page - https://appsca.undergroundservicealert.org/pcadmin/Account/Login?returnUrl=%2Fpcadmin%2FOperations - The Damage Prevention Portal is where you can manage your mapping, contact info, and ticket delivery.\\n\\nArea of Interest (AOI) can be found under Settings - OneCallAccess and clicking on your Station Code, then clicking on Area of Interest.\\nHere is a video that goes into more detail: How to manage your Area of Interest - https://www.youtube.com/watch?v=KZzHnITi-3Q&feature=youtu.be\\n\\nThank you,'\n  },\n  {\n    id: 'general',\n    match: () => true,\n    subject: 'DPS Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the form below and take appropriate action.\\n\\nTicket Number: {{ticket_number}}\\nStation Code(s): {{station_codes}}\\nState(s): {{states}}\\nIssue Type: {{issue_type}}\\n\\nAdditional Notes:\\n{{notes}}\\n\\nThank you,'\n  }\n];\n\nconst template = templates.find(t => t.match());\n\nreturn [{\n  json: {\n    ...data,\n    template: {\n      id: template.id,\n      subject_template: template.subject,\n      body_template: template.body\n    }\n  }\n}];"
       },
       "name": "Select Template",
       "type": "n8n-nodes-base.code",
@@ -447,7 +450,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        3168,
+        3968,
         208
       ],
       "id": "672ebbe7-9c57-4252-a8a9-56bdb1087927",
@@ -465,7 +468,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3392,
+        4192,
         208
       ],
       "id": "a0ba5aec-dda7-408f-b577-5f41de67b18c",
@@ -473,13 +476,13 @@
     },
     {
       "parameters": {
-        "jsCode": "// Render Template - HTML Email Format\n// Replace the code in \"Render Template (Preview)\" with this\n\nconst allItems = $input.all();\nconst results = [];\n\nconst CC_RECIPIENTS = [\n  'trevor.harris@usan.org',\n  'centeroperations@usanorth811.org',\n  'germain.suess@usan.org',\n  'christian.olesen@usan.org'\n];\n\n// MANUAL REVIEW MODE - Set to true for testing (all emails go to reviewer)\nconst MANUAL_REVIEW_MODE = false;\nconst REVIEWER_EMAIL = 'christian.olesen@usan.org';  // Only used if MANUAL_REVIEW_MODE is true\n\n// EXCEPTION CODES - Route to manual review (PG&E only - ATTDNORCAL handled separately below)\nconst MANUAL_REVIEW_CODES = [\n  // PG&E codes - different process for Steve Cleaver\n  'PGEYLO', 'PGESJ1', 'PGEMSV', 'PGEHAY', 'PGEGVY', 'PGEUET', 'PGEHIN', 'PGEVJO',\n  'PGENPA', 'PGESAL', 'PGERID', 'PGEBR2', 'PGESJO', 'PGECND', 'PGERBF', 'PGEBUR',\n  'PGEFNO', 'PGEOAK', 'PGESLO', 'PGEVAC', 'PGEPLA', 'PGECLM', 'PGEUKH', 'PGEMER',\n  'PGEMDO', 'PGEBEL', 'PGESRO', 'PGERCH', 'PGEBFD', 'PGESRF', 'PGEEUR', 'PGESFO',\n  'PGECHI', 'PGEAUB', 'PGECUP', 'PGEORO', 'PGERED', 'PGESAC', 'PGESTK'\n];\n\n// Check if any station codes require PG&E manual review\nfunction requiresManualReview(stationCodes) {\n  return stationCodes.some(code => MANUAL_REVIEW_CODES.includes(code.toUpperCase()));\n}\n\n// Issue types that route to memberservices (but with normal email format)\nconst MEMBERSERVICES_ISSUE_TYPES = ['other'];\n\nfunction issueTypeRoutesToMemberServices(issueType) {\n  return MEMBERSERVICES_ISSUE_TYPES.includes((issueType || '').toLowerCase());\n}\n\nfunction render(tmpl, vars) {\n  let result = tmpl;\n  for (const [key, value] of Object.entries(vars)) {\n    result = result.replace(new RegExp(`\\\\{\\\\{${key}\\\\}\\\\}`, 'g'), value || '');\n  }\n  return result;\n}\n\n// HTML Signature - Matches Outlook signature format\nconst LOGO_URL = 'https://i.imgur.com/v6diEdK.jpg';\nconst BANNER_URL = 'https://i.imgur.com/HfkbUwp.png';\n\nconst SIGNATURE_HTML = `\n<p style=\"font-family: Aptos, sans-serif; font-size: 12pt;\">Thank you,</p>\n<br>\n<table cellspacing=\"0\" cellpadding=\"0\" style=\"border-collapse: collapse;\">\n  <tr>\n    <td style=\"padding-right: 15px; vertical-align: top; border-right: 1.5pt solid #000;\">\n      <img src=\"${LOGO_URL}\" alt=\"USAN 811\" width=\"175\" style=\"max-width: 175px;\">\n    </td>\n    <td style=\"padding-left: 15px; vertical-align: top;\">\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><b>Christian Olesen</b></p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">Member Services Specialist</p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">REDACTED_PHONE</p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><a href=\"http://www.undergroundservicealert.org/\" style=\"color: #0563c1;\">undergroundservicealert.org</a></p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">4005 Port Chicago Hwy #100 Concord, CA 94520</p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><a href=\"https://calendly.com/christian-olesen-usan/30min\" style=\"color: #4c94d8;\"><b>Christian's Availability</b></a></p>\n    </td>\n  </tr>\n</table>\n<br>\n<a href=\"https://www.undergroundservicealert.org/damage-prevention-portal/\"><img src=\"${BANNER_URL}\" alt=\"NEW Damage Prevention Portal\" width=\"450\" style=\"max-width: 450px;\"></a>\n<br><br>\n<p style=\"font-size: 9pt; color: #666; font-family: Aptos, sans-serif;\">This message contains confidential information and is intended only for the intended recipients. If you are not an intended recipient you should not disseminate, distribute or copy this e-mail. Please notify us immediately by e-mail if you have received this e-mail by mistake and delete this e-mail from your system.</p>\n`;\n\n// Helper function to build forwarded section (needed early for ATTDNORCAL)\nfunction buildForwardedSection(data, stationCodes) {\n  return `\n<hr style=\"border: none; border-top: 1px solid #ccc; margin: 20px 0;\">\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n<strong>From:</strong> noreply@fs26.formsite.com<br>\n<strong>Sent:</strong> ${new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}<br>\n<strong>To:</strong> Member Services &lt;memberservices@usan.org&gt;<br>\n<strong>Subject:</strong> DPS - Department Alert System Result #${data.alert_id}\n</p>\n<table style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt; border-collapse: collapse; margin-top: 15px;\" cellpadding=\"8\">\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Reference #</strong></td><td style=\"border: 1px solid #ddd;\">${data.alert_id}</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Status</strong></td><td style=\"border: 1px solid #ddd;\">Complete</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Primary issue or request</strong></td><td style=\"border: 1px solid #ddd;\">${data.issue_type}</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Member Code</strong></td><td style=\"border: 1px solid #ddd;\">${stationCodes.join(', ')}</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>State</strong></td><td style=\"border: 1px solid #ddd;\">${data.states.join(', ')}</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Ticket Number</strong></td><td style=\"border: 1px solid #ddd;\">${data.ticket_number}</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Customer Name</strong></td><td style=\"border: 1px solid #ddd;\">${data.customer_name || 'N/A'}</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Additional Notes</strong></td><td style=\"border: 1px solid #ddd;\">${data.notes || 'N/A'}</td></tr>\n</table>\n`;\n}\n\nfor (let i = 0; i < allItems.length; i++) {\n  const data = allItems[i].json;\n  const template = data.template;\n  const recipient = data.current_recipient;\n\n  // Build forwarded section early (needed for all paths)\n  const forwardedSection = buildForwardedSection(data, recipient.station_codes);\n\n  // ============================================\n  // SPECIAL HANDLING #1: ATTDNORCAL → Utiliquest team (Shant, Eduardo, Dawn)\n  // ============================================\n  const hasATTDNORCAL = recipient.station_codes.some(c => c.toUpperCase() === 'ATTDNORCAL');\n\n  if (hasATTDNORCAL) {\n    // Utiliquest team recipients\n    const utiliquestTo = 'REDACTED_EMAIL';\n    const utiliquestCcReal = [\n      'REDACTED_EMAIL',\n      'REDACTED_EMAIL',\n      ...CC_RECIPIENTS\n    ];\n\n    // Review header for manual mode\n    const attReviewHeader = MANUAL_REVIEW_MODE ? `\n<div style=\"background: #d4edda; border: 2px solid #28a745; padding: 15px; margin-bottom: 20px; font-family: Arial, sans-serif;\">\n  <h3 style=\"margin: 0 0 10px 0; color: #155724;\">📋 ATTDNORCAL - REVIEW BEFORE SENDING</h3>\n  <p style=\"margin: 5px 0;\"><strong>Send To:</strong> Shant Simonian &lt;REDACTED_EMAIL&gt;</p>\n  <p style=\"margin: 5px 0;\"><strong>CC:</strong> REDACTED_EMAIL, REDACTED_EMAIL, ${CC_RECIPIENTS.join(', ')}</p>\n  <p style=\"margin: 5px 0;\"><strong>Station Code(s):</strong> ${recipient.station_codes.join(', ')}</p>\n  <hr style=\"border: none; border-top: 1px solid #28a745; margin: 10px 0;\">\n  <p style=\"margin: 0; font-size: 11px; color: #155724;\">Review the email below, then forward to Utiliquest team.</p>\n</div>\n` : '';\n\n    const utiliquestBody = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n</head>\n<body style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n${attReviewHeader}\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nShant, an excavator has reported a no response on the ticket(s) below, please pay extra attention to this ticket and respond as soon as possible.\n</p>\n${SIGNATURE_HTML}\n${forwardedSection}\n</body>\n</html>\n`;\n\n    // In manual review mode, send to reviewer; otherwise send to Utiliquest\n    const sendTo = MANUAL_REVIEW_MODE ? REVIEWER_EMAIL : utiliquestTo;\n    const sendCc = MANUAL_REVIEW_MODE ? [] : utiliquestCcReal;\n    const sendToName = MANUAL_REVIEW_MODE ? 'Reviewer' : 'Shant';\n    const subjectPrefix = MANUAL_REVIEW_MODE ? '[REVIEW] ATTDNORCAL - ' : '';\n\n    results.push({\n      json: {\n        email_number: results.length + 1,\n        status: MANUAL_REVIEW_MODE ? 'ATTDNORCAL - PENDING REVIEW' : 'UTILIQUEST NOTIFICATION',\n        to: sendTo,\n        to_name: sendToName,\n        cc: sendCc,\n        subject: `${subjectPrefix}FW: DPS - Department Alert System Result #${data.alert_id}`,\n        body: utiliquestBody,\n        body_text: 'Shant, an excavator has reported a no response on the ticket(s) below, please pay extra attention to this ticket and respond as soon as possible.',\n        template_used: 'attdnorcal_utiliquest',\n        station_codes: recipient.station_codes,\n        intended_recipient: {\n          email: utiliquestTo,\n          name: 'Shant Simonian'\n        },\n        input_summary: {\n          alert_id: data.alert_id,\n          ticket_number: data.ticket_number,\n          state: data.states.join(', '),\n          issue_type: data.issue_type\n        }\n      }\n    });\n    continue; // Skip normal processing\n  }\n\n  // ============================================\n  // SPECIAL HANDLING #2: PG&E codes → Manual review to memberservices\n  // ============================================\n  const needsCodeReview = requiresManualReview(recipient.station_codes);\n\n  if (needsCodeReview) {\n    const manualReviewBody = `\n<!DOCTYPE html>\n<html>\n<head><meta charset=\"utf-8\"></head>\n<body style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n<h2 style=\"color: #cc0000;\">⚠️ MANUAL ATTENTION REQUIRED</h2>\n<p><strong>Reason:</strong> PG&E code - Different process for Steve Cleaver</p>\n<hr>\n<p><strong>Original Recipient:</strong> ${recipient.rep_name} &lt;${recipient.rep_email}&gt;</p>\n<p><strong>Station Code(s):</strong> ${recipient.station_codes.join(', ')}</p>\n<p><strong>Ticket Number:</strong> ${data.ticket_number}</p>\n<p><strong>Alert ID:</strong> ${data.alert_id}</p>\n<p><strong>Issue Type:</strong> ${data.issue_type}</p>\n<p><strong>State:</strong> ${data.states.join(', ')}</p>\n<p><strong>Customer:</strong> ${data.customer_name || 'N/A'}</p>\n<p><strong>Notes:</strong> ${data.notes || 'N/A'}</p>\n<hr>\n<p>Please handle this alert manually using the appropriate process.</p>\n</body>\n</html>`;\n\n    results.push({\n      json: {\n        email_number: i + 1,\n        status: 'PGE - MANUAL REVIEW',\n        requires_human_review: true,\n        to: 'memberservices@usan.org',\n        to_name: 'Member Services',\n        cc: [],\n        subject: `⚠️ Manual Attention Required: Ticket #${data.ticket_number} - ${recipient.station_codes.join(', ')}`,\n        body: manualReviewBody,\n        template_used: 'manual_review_pge',\n        station_codes: recipient.station_codes,\n        input_summary: {\n          alert_id: data.alert_id,\n          ticket_number: data.ticket_number,\n          state: data.states.join(', '),\n          issue_type: data.issue_type\n        }\n      }\n    });\n    continue; // Skip normal processing\n  }\n\n  // ============================================\n  // NORMAL EMAIL PROCESSING\n  // (includes \"Other\" which routes to memberservices with normal format)\n  // ============================================\n  const isOtherIssueType = issueTypeRoutesToMemberServices(data.issue_type);\n\n  const firstName = (recipient.rep_name || 'Member Rep').split(' ')[0];\n  const hasRealName = recipient.rep_name && recipient.rep_name.trim() !== '';\n  const subjectFirstName = hasRealName ? recipient.rep_name.split(' ')[0] : '';\n\n  const templates = {\n    no_response_ca: `\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n<strong>${firstName}</strong>, please review the form below and reach out to the customer listed to resolve the issue.\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt; background-color: #FFFF00; padding: 5px;\">\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP) as required by California Code 4216\n(<a href=\"https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?lawCode=GOV&division=5.&title=1.&part=&chapter=3.1.&article=2\">link</a>).\n</p>\n<ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n  <li>How to use Electronic Positive Response - <a href=\"https://www.youtube.com/watch?v=c1b6HlX-fx4\">https://www.youtube.com/watch?v=c1b6HlX-fx4</a></li>\n</ul>\n`,\n    no_response_nv: `\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n<strong>${firstName}</strong>, please review the form below and reach out to the customer listed to resolve the issue.\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt; background-color: #FFFF00; padding: 5px;\">\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP) as required by NRS 455.\n</p>\n<ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n  <li>How to use Electronic Positive Response - <a href=\"https://www.youtube.com/watch?v=c1b6HlX-fx4\">https://www.youtube.com/watch?v=c1b6HlX-fx4</a></li>\n</ul>\n`,\n    no_response_generic: `\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n<strong>${firstName}</strong>, please review the form below and reach out to the customer listed to resolve the issue.\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP).\n</p>\n<ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n  <li>How to use Electronic Positive Response - <a href=\"https://www.youtube.com/watch?v=c1b6HlX-fx4\">https://www.youtube.com/watch?v=c1b6HlX-fx4</a></li>\n</ul>\n`,\n    contact_info_issue: `\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n<strong>${firstName}</strong>, please review the email below from one of our agents for reference and reach out to the excavator on the ticket to resolve the issue.\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nIf you need to update your Member Contact information within the Damage Prevention Portal, please use the link below to sign in. Then navigate to the station details for your station code (Settings > OneCallAccess).\n</p>\n<ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n  <li><strong>NV DPP Login Page</strong> - <a href=\"https://appsnv.undergroundservicealert.org/pcadmin/Account/Login\">https://appsnv.undergroundservicealert.org/pcadmin/Account/Login</a></li>\n  <li><strong>CA DPP Login Page</strong> - <a href=\"https://appsca.undergroundservicealert.org/pcadmin/Account/Login?returnUrl=%2Fpcadmin%2FOperations\">https://appsca.undergroundservicealert.org/pcadmin/Account/Login</a></li>\n</ul>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nContact Information can be found under Settings - OneCallAccess then clicking on your Station Code.<br>\nThe Member Contact is displayed on each ticket available for the excavator.<br>\nThe Member IT contact is not displayed on the ticket and is meant for the Member Rep.\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">Please let me know if you have any questions.</p>\n`,\n    member_manually_added: `\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nHello <strong>${firstName}</strong>,\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nPlease review the email below from one of our agents for reference. The station code <strong>${recipient.station_codes.join(', ')}</strong> has been manually added to ticket# <strong>${data.ticket_number}</strong> at the request of the excavator.\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nIf you need to update your Area of Interest, please visit the Damage Prevention Portal using the link below.\n</p>\n<ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n  <li><strong>CA DPP Login Page</strong> - <a href=\"https://appsca.undergroundservicealert.org/pcadmin/Account/Login?returnUrl=%2Fpcadmin%2FOperations\">https://appsca.undergroundservicealert.org/pcadmin/Account/Login</a></li>\n</ul>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nArea of Interest (AOI) can be found under Settings - OneCallAccess and clicking on your Station Code, then clicking on Area of Interest.<br>\nHere is a video that goes into more detail: <a href=\"https://www.youtube.com/watch?v=KZzHnITi-3Q&feature=youtu.be\">How to manage your Area of Interest</a>\n</p>\n`,\n    general: `\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n<strong>${firstName}</strong>, please review the form below and take appropriate action.\n</p>\n`\n  };\n\n  const templateId = template.id;\n  const bodyHtml = templates[templateId] || templates.general;\n\n  const reviewHeader = MANUAL_REVIEW_MODE ? `\n<div style=\"background: #fff3cd; border: 2px solid #ffc107; padding: 15px; margin-bottom: 20px; font-family: Arial, sans-serif;\">\n  <h3 style=\"margin: 0 0 10px 0; color: #856404;\">📋 REVIEW BEFORE FORWARDING</h3>\n  <p style=\"margin: 5px 0;\"><strong>Forward To:</strong> ${recipient.rep_name} &lt;${recipient.rep_email}&gt;</p>\n  <p style=\"margin: 5px 0;\"><strong>CC:</strong> ${CC_RECIPIENTS.join(', ')}</p>\n  <p style=\"margin: 5px 0;\"><strong>Station Code(s):</strong> ${recipient.station_codes.join(', ')}</p>\n  <hr style=\"border: none; border-top: 1px solid #ffc107; margin: 10px 0;\">\n  <p style=\"margin: 0; font-size: 11px; color: #856404;\">Review the email below, then forward to the recipient above.</p>\n</div>\n` : '';\n\n  const fullHtml = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n</head>\n<body style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n${reviewHeader}\n${bodyHtml}\n${SIGNATURE_HTML}\n${forwardedSection}\n</body>\n</html>\n`;\n\n  // Determine where to send\n  let sendTo;\n  if (MANUAL_REVIEW_MODE) {\n    sendTo = REVIEWER_EMAIL;\n  } else if (isOtherIssueType) {\n    sendTo = 'memberservices@usan.org';  // \"Other\" routes here with normal email format\n  } else {\n    sendTo = recipient.rep_email;\n  }\n\n  const sendCc = MANUAL_REVIEW_MODE ? [] : CC_RECIPIENTS;\n  const subjectPrefix = MANUAL_REVIEW_MODE ? `[REVIEW] For: ${recipient.rep_name} - ` : (subjectFirstName ? subjectFirstName + ', ' : '');\n\n  let toName;\n  if (MANUAL_REVIEW_MODE) {\n    toName = 'Reviewer';\n  } else if (isOtherIssueType) {\n    toName = 'Member Services';\n  } else {\n    toName = recipient.rep_name;\n  }\n\n  let status;\n  if (MANUAL_REVIEW_MODE) {\n    status = 'PENDING REVIEW';\n  } else if (isOtherIssueType) {\n    status = 'OTHER - ROUTED TO MEMBERSERVICES';\n  } else {\n    status = 'AUTO-SEND TO REP';\n  }\n\n  results.push({\n    json: {\n      email_number: i + 1,\n      status: status,\n      to: sendTo,\n      to_name: toName,\n      cc: sendCc,\n      subject: `${subjectPrefix}FW: DPS - Department Alert System Result #${data.alert_id}`,\n      body: fullHtml,\n      body_text: `${firstName}, please review the form below and reach out to the customer listed to resolve the issue.`,\n      template_used: templateId,\n      station_codes: recipient.station_codes,\n      intended_recipient: {\n        email: recipient.rep_email,\n        name: recipient.rep_name\n      },\n      input_summary: {\n        alert_id: data.alert_id,\n        ticket_number: data.ticket_number,\n        state: data.states.join(', '),\n        issue_type: data.issue_type\n      }\n    }\n  });\n}\n\nreturn results;\n"
+        "jsCode": "// Render Template - HTML Email Format\n// Replace the code in \"Render Template (Preview)\" with this\n\nconst allItems = $input.all();\nconst results = [];\n\nconst CC_RECIPIENTS = [\n  'trevor.harris@usan.org',\n  'centeroperations@usanorth811.org',\n  'germain.suess@usan.org',\n  'christian.olesen@usan.org'\n];\n\n// MANUAL REVIEW MODE - Set to true for testing (all emails go to reviewer)\nconst MANUAL_REVIEW_MODE = false;\nconst REVIEWER_EMAIL = 'christian.olesen@usan.org';  // Only used if MANUAL_REVIEW_MODE is true\n\n// EXCEPTION CODES - Route to manual review (PG&E only - ATTDNORCAL handled separately below)\nconst MANUAL_REVIEW_CODES = [\n  // PG&E codes - different process for Steve Cleaver\n  'PGEYLO', 'PGESJ1', 'PGEMSV', 'PGEHAY', 'PGEGVY', 'PGEUET', 'PGEHIN', 'PGEVJO',\n  'PGENPA', 'PGESAL', 'PGERID', 'PGEBR2', 'PGESJO', 'PGECND', 'PGERBF', 'PGEBUR',\n  'PGEFNO', 'PGEOAK', 'PGESLO', 'PGEVAC', 'PGEPLA', 'PGECLM', 'PGEUKH', 'PGEMER',\n  'PGEMDO', 'PGEBEL', 'PGESRO', 'PGERCH', 'PGEBFD', 'PGESRF', 'PGEEUR', 'PGESFO',\n  'PGECHI', 'PGEAUB', 'PGECUP', 'PGEORO', 'PGERED', 'PGESAC', 'PGESTK'\n];\n\n// Check if any station codes require PG&E manual review\nfunction requiresManualReview(stationCodes) {\n  return stationCodes.some(code => MANUAL_REVIEW_CODES.includes(code.toUpperCase()));\n}\n\n// Issue types that route to memberservices (but with normal email format)\nconst MEMBERSERVICES_ISSUE_TYPES = ['other'];\n\nfunction issueTypeRoutesToMemberServices(issueType) {\n  return MEMBERSERVICES_ISSUE_TYPES.includes((issueType || '').toLowerCase());\n}\n\nfunction render(tmpl, vars) {\n  let result = tmpl;\n  for (const [key, value] of Object.entries(vars)) {\n    result = result.replace(new RegExp(`\\\\{\\\\{${key}\\\\}\\\\}`, 'g'), value || '');\n  }\n  return result;\n}\n\n// HTML Signature - Matches Outlook signature format\nconst LOGO_URL = 'https://i.imgur.com/v6diEdK.jpg';\nconst BANNER_URL = 'https://i.imgur.com/HfkbUwp.png';\n\nconst SIGNATURE_HTML = `\n<p style=\"font-family: Aptos, sans-serif; font-size: 12pt;\">Thank you,</p>\n<br>\n<table cellspacing=\"0\" cellpadding=\"0\" style=\"border-collapse: collapse;\">\n  <tr>\n    <td style=\"padding-right: 15px; vertical-align: top; border-right: 1.5pt solid #000;\">\n      <img src=\"${LOGO_URL}\" alt=\"USAN 811\" width=\"175\" style=\"max-width: 175px;\">\n    </td>\n    <td style=\"padding-left: 15px; vertical-align: top;\">\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><b>Christian Olesen</b></p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">Member Services Specialist</p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">REDACTED_PHONE</p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><a href=\"http://www.undergroundservicealert.org/\" style=\"color: #0563c1;\">undergroundservicealert.org</a></p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">4005 Port Chicago Hwy #100 Concord, CA 94520</p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><a href=\"https://calendly.com/christian-olesen-usan/30min\" style=\"color: #4c94d8;\"><b>Christian's Availability</b></a></p>\n    </td>\n  </tr>\n</table>\n<br>\n<a href=\"https://www.undergroundservicealert.org/damage-prevention-portal/\"><img src=\"${BANNER_URL}\" alt=\"NEW Damage Prevention Portal\" width=\"450\" style=\"max-width: 450px;\"></a>\n<br><br>\n<p style=\"font-size: 9pt; color: #666; font-family: Aptos, sans-serif;\">This message contains confidential information and is intended only for the intended recipients. If you are not an intended recipient you should not disseminate, distribute or copy this e-mail. Please notify us immediately by e-mail if you have received this e-mail by mistake and delete this e-mail from your system.</p>\n`;\n\n// Helper function to build forwarded section (needed early for ATTDNORCAL)\nfunction buildForwardedSection(data, stationCodes) {\n  return `\n<hr style=\"border: none; border-top: 1px solid #ccc; margin: 20px 0;\">\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n<strong>From:</strong> noreply@fs26.formsite.com<br>\n<strong>Sent:</strong> ${new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}<br>\n<strong>To:</strong> Member Services &lt;memberservices@usan.org&gt;<br>\n<strong>Subject:</strong> DPS - Department Alert System Result #${data.alert_id}\n</p>\n<table style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt; border-collapse: collapse; margin-top: 15px;\" cellpadding=\"8\">\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Reference #</strong></td><td style=\"border: 1px solid #ddd;\">${data.alert_id}</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Status</strong></td><td style=\"border: 1px solid #ddd;\">Complete</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Primary issue or request</strong></td><td style=\"border: 1px solid #ddd;\">${data.issue_type}</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Member Code</strong></td><td style=\"border: 1px solid #ddd;\">${stationCodes.join(', ')}</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>State</strong></td><td style=\"border: 1px solid #ddd;\">${data.states.join(', ')}</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Ticket Number(s)</strong></td><td style=\"border: 1px solid #ddd;\">${(data.ticket_numbers || [data.ticket_number]).join(', ')}</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Customer Name</strong></td><td style=\"border: 1px solid #ddd;\">${data.customer_name || 'N/A'}</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Additional Notes</strong></td><td style=\"border: 1px solid #ddd;\">${data.notes || 'N/A'}</td></tr>\n</table>\n`;\n}\n\nfor (let i = 0; i < allItems.length; i++) {\n  const data = allItems[i].json;\n  const template = data.template;\n  const recipient = data.current_recipient;\n\n  // Build forwarded section early (needed for all paths)\n  const forwardedSection = buildForwardedSection(data, recipient.station_codes);\n\n  // ============================================\n  // SPECIAL HANDLING #1: ATTDNORCAL \u2192 Utiliquest team (Shant, Eduardo, Dawn)\n  // ============================================\n  const hasATTDNORCAL = recipient.station_codes.some(c => c.toUpperCase() === 'ATTDNORCAL');\n\n  if (hasATTDNORCAL) {\n    // Utiliquest team recipients\n    const utiliquestTo = 'REDACTED_EMAIL';\n    const utiliquestCcReal = [\n      'REDACTED_EMAIL',\n      'REDACTED_EMAIL',\n      ...CC_RECIPIENTS\n    ];\n\n    // Review header for manual mode\n    const attReviewHeader = MANUAL_REVIEW_MODE ? `\n<div style=\"background: #d4edda; border: 2px solid #28a745; padding: 15px; margin-bottom: 20px; font-family: Arial, sans-serif;\">\n  <h3 style=\"margin: 0 0 10px 0; color: #155724;\">\ud83d\udccb ATTDNORCAL - REVIEW BEFORE SENDING</h3>\n  <p style=\"margin: 5px 0;\"><strong>Send To:</strong> Shant Simonian &lt;REDACTED_EMAIL&gt;</p>\n  <p style=\"margin: 5px 0;\"><strong>CC:</strong> REDACTED_EMAIL, REDACTED_EMAIL, ${CC_RECIPIENTS.join(', ')}</p>\n  <p style=\"margin: 5px 0;\"><strong>Station Code(s):</strong> ${recipient.station_codes.join(', ')}</p>\n  <hr style=\"border: none; border-top: 1px solid #28a745; margin: 10px 0;\">\n  <p style=\"margin: 0; font-size: 11px; color: #155724;\">Review the email below, then forward to Utiliquest team.</p>\n</div>\n` : '';\n\n    const utiliquestBody = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n</head>\n<body style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n${attReviewHeader}\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nShant,\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nAn excavator has reported a no response on the ticket(s) below, please pay extra attention to this ticket and respond as soon as possible.\n</p>\n${SIGNATURE_HTML}\n${forwardedSection}\n</body>\n</html>\n`;\n\n    // In manual review mode, send to reviewer; otherwise send to Utiliquest\n    const sendTo = MANUAL_REVIEW_MODE ? REVIEWER_EMAIL : utiliquestTo;\n    const sendCc = MANUAL_REVIEW_MODE ? [] : utiliquestCcReal;\n    const sendToName = MANUAL_REVIEW_MODE ? 'Reviewer' : 'Shant';\n    const subjectPrefix = MANUAL_REVIEW_MODE ? '[REVIEW] ATTDNORCAL - ' : '';\n\n    results.push({\n      json: {\n        email_number: results.length + 1,\n        status: MANUAL_REVIEW_MODE ? 'ATTDNORCAL - PENDING REVIEW' : 'UTILIQUEST NOTIFICATION',\n        to: sendTo,\n        to_name: sendToName,\n        cc: sendCc,\n        subject: `${subjectPrefix}FW: DPS - Department Alert System Result #${data.alert_id}`,\n        body: utiliquestBody,\n        body_text: 'Shant,\\n\\nAn excavator has reported a no response on the ticket(s) below, please pay extra attention to this ticket and respond as soon as possible.',\n        template_used: 'attdnorcal_utiliquest',\n        station_codes: recipient.station_codes,\n        intended_recipient: {\n          email: utiliquestTo,\n          name: 'Shant Simonian'\n        },\n        input_summary: {\n          alert_id: data.alert_id,\n          ticket_number: data.ticket_number,\n          state: data.states.join(', '),\n          issue_type: data.issue_type\n        }\n      }\n    });\n    continue; // Skip normal processing\n  }\n\n  // ============================================\n  // SPECIAL HANDLING #2: PG&E codes \u2192 Manual review to memberservices\n  // ============================================\n  const needsCodeReview = requiresManualReview(recipient.station_codes);\n\n  if (needsCodeReview) {\n    const manualReviewBody = `\n<!DOCTYPE html>\n<html>\n<head><meta charset=\"utf-8\"></head>\n<body style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n<h2 style=\"color: #cc0000;\">\u26a0\ufe0f MANUAL ATTENTION REQUIRED</h2>\n<p><strong>Reason:</strong> PG&E code - Different process for Steve Cleaver</p>\n<hr>\n<p><strong>Original Recipient:</strong> ${recipient.rep_name} &lt;${recipient.rep_email}&gt;</p>\n<p><strong>Station Code(s):</strong> ${recipient.station_codes.join(', ')}</p>\n<p><strong>Ticket Number:</strong> ${data.ticket_number}</p>\n<p><strong>Alert ID:</strong> ${data.alert_id}</p>\n<p><strong>Issue Type:</strong> ${data.issue_type}</p>\n<p><strong>State:</strong> ${data.states.join(', ')}</p>\n<p><strong>Customer:</strong> ${data.customer_name || 'N/A'}</p>\n<p><strong>Notes:</strong> ${data.notes || 'N/A'}</p>\n<hr>\n<p>Please handle this alert manually using the appropriate process.</p>\n</body>\n</html>`;\n\n    results.push({\n      json: {\n        email_number: i + 1,\n        status: 'PGE - MANUAL REVIEW',\n        requires_human_review: true,\n        to: 'memberservices@usan.org',\n        to_name: 'Member Services',\n        cc: [],\n        subject: `\u26a0\ufe0f Manual Attention Required: Ticket #${data.ticket_number} - ${recipient.station_codes.join(', ')}`,\n        body: manualReviewBody,\n        template_used: 'manual_review_pge',\n        station_codes: recipient.station_codes,\n        input_summary: {\n          alert_id: data.alert_id,\n          ticket_number: data.ticket_number,\n          state: data.states.join(', '),\n          issue_type: data.issue_type\n        }\n      }\n    });\n    continue; // Skip normal processing\n  }\n\n  // ============================================\n  // NORMAL EMAIL PROCESSING\n  // (includes \"Other\" which routes to memberservices with normal format)\n  // ============================================\n  const isOtherIssueType = issueTypeRoutesToMemberServices(data.issue_type);\n\n  const firstName = (recipient.rep_name || 'Member Rep').split(' ')[0];\n  const hasRealName = recipient.rep_name && recipient.rep_name.trim() !== '';\n  const subjectFirstName = hasRealName ? recipient.rep_name.split(' ')[0] : '';\n\n  const templates = {\n    no_response_ca: `\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n${firstName},\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nPlease review the form below and reach out to the customer listed to resolve the issue.\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt; background-color: #FFFF00; padding: 5px;\">\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP) as required by California Code 4216\n(<a href=\"https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?lawCode=GOV&division=5.&title=1.&part=&chapter=3.1.&article=2\">link</a>).\n</p>\n<ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n  <li>How to use Electronic Positive Response - <a href=\"https://www.youtube.com/watch?v=c1b6HlX-fx4\">https://www.youtube.com/watch?v=c1b6HlX-fx4</a></li>\n</ul>\n`,\n    no_response_nv: `\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n${firstName},\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nPlease review the form below and reach out to the customer listed to resolve the issue.\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt; background-color: #FFFF00; padding: 5px;\">\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP) as required by NRS 455.\n</p>\n<ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n  <li>How to use Electronic Positive Response - <a href=\"https://www.youtube.com/watch?v=c1b6HlX-fx4\">https://www.youtube.com/watch?v=c1b6HlX-fx4</a></li>\n</ul>\n`,\n    no_response_generic: `\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n${firstName},\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nPlease review the form below and reach out to the customer listed to resolve the issue.\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP).\n</p>\n<ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n  <li>How to use Electronic Positive Response - <a href=\"https://www.youtube.com/watch?v=c1b6HlX-fx4\">https://www.youtube.com/watch?v=c1b6HlX-fx4</a></li>\n</ul>\n`,\n    contact_info_issue: `\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n${firstName},\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nPlease review the email below from one of our agents for reference and reach out to the excavator on the ticket to resolve the issue.\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nIf you need to update your Member Contact information within the Damage Prevention Portal, please use the link below to sign in. Then navigate to the station details for your station code (Settings > OneCallAccess).\n</p>\n<ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n  <li><strong>NV DPP Login Page</strong> - <a href=\"https://appsnv.undergroundservicealert.org/pcadmin/Account/Login\">https://appsnv.undergroundservicealert.org/pcadmin/Account/Login</a></li>\n  <li><strong>CA DPP Login Page</strong> - <a href=\"https://appsca.undergroundservicealert.org/pcadmin/Account/Login?returnUrl=%2Fpcadmin%2FOperations\">https://appsca.undergroundservicealert.org/pcadmin/Account/Login</a></li>\n</ul>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nContact Information can be found under Settings - OneCallAccess then clicking on your Station Code.<br>\nThe Member Contact is displayed on each ticket available for the excavator.<br>\nThe Member IT contact is not displayed on the ticket and is meant for the Member Rep.\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">Please let me know if you have any questions.</p>\n`,\n    member_manually_added: `\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nHello ${firstName},\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nPlease review the email below from one of our agents for reference. The station code ${recipient.station_codes.join(', ')} has been manually added to ticket# ${data.ticket_number} at the request of the excavator.\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nIf you need to update your Area of Interest, please visit the Damage Prevention Portal using the link below.\n</p>\n<ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n  <li><strong>CA DPP Login Page</strong> - <a href=\"https://appsca.undergroundservicealert.org/pcadmin/Account/Login?returnUrl=%2Fpcadmin%2FOperations\">https://appsca.undergroundservicealert.org/pcadmin/Account/Login</a></li>\n</ul>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nArea of Interest (AOI) can be found under Settings - OneCallAccess and clicking on your Station Code, then clicking on Area of Interest.<br>\nHere is a video that goes into more detail: <a href=\"https://www.youtube.com/watch?v=KZzHnITi-3Q&feature=youtu.be\">How to manage your Area of Interest</a>\n</p>\n`,\n    general: `\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n${firstName},\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nPlease review the form below and take appropriate action.\n</p>\n`\n  };\n\n  const templateId = template.id;\n  const bodyHtml = templates[templateId] || templates.general;\n\n  const reviewHeader = MANUAL_REVIEW_MODE ? `\n<div style=\"background: #fff3cd; border: 2px solid #ffc107; padding: 15px; margin-bottom: 20px; font-family: Arial, sans-serif;\">\n  <h3 style=\"margin: 0 0 10px 0; color: #856404;\">\ud83d\udccb REVIEW BEFORE FORWARDING</h3>\n  <p style=\"margin: 5px 0;\"><strong>Forward To:</strong> ${recipient.rep_name} &lt;${recipient.rep_email}&gt;</p>\n  <p style=\"margin: 5px 0;\"><strong>CC:</strong> ${CC_RECIPIENTS.join(', ')}</p>\n  <p style=\"margin: 5px 0;\"><strong>Station Code(s):</strong> ${recipient.station_codes.join(', ')}</p>\n  <hr style=\"border: none; border-top: 1px solid #ffc107; margin: 10px 0;\">\n  <p style=\"margin: 0; font-size: 11px; color: #856404;\">Review the email below, then forward to the recipient above.</p>\n</div>\n` : '';\n\n  const fullHtml = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n</head>\n<body style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n${reviewHeader}\n${bodyHtml}\n${SIGNATURE_HTML}\n${forwardedSection}\n</body>\n</html>\n`;\n\n  // Determine where to send\n  let sendTo;\n  if (MANUAL_REVIEW_MODE) {\n    sendTo = REVIEWER_EMAIL;\n  } else if (isOtherIssueType) {\n    if (data.triage_override) {\n      sendTo = data.triage_override.send_to;\n    } else {\n      sendTo = 'memberservices@usan.org';\n    }\n  } else {\n    sendTo = recipient.rep_email;\n  }\n\n  const sendCc = MANUAL_REVIEW_MODE ? [] : CC_RECIPIENTS;\n  const subjectPrefix = MANUAL_REVIEW_MODE ? `[REVIEW] For: ${recipient.rep_name} - ` : (subjectFirstName ? subjectFirstName + ', ' : '');\n\n  let toName;\n  if (MANUAL_REVIEW_MODE) {\n    toName = 'Reviewer';\n  } else if (isOtherIssueType) {\n    if (data.triage_override) {\n      toName = data.triage_override.send_to_name;\n    } else {\n      toName = 'Member Services';\n    }\n  } else {\n    toName = recipient.rep_name;\n  }\n\n  let status;\n  if (MANUAL_REVIEW_MODE) {\n    status = 'PENDING REVIEW';\n  } else if (isOtherIssueType) {\n    if (data.triage_override) {\n      status = 'AI TRIAGE: ' + data.triage_override.classified_issue_type.toUpperCase() + ' -> ' + data.triage_override.send_to;\n    } else {\n      status = 'OTHER - ROUTED TO MEMBERSERVICES';\n    }\n  } else {\n    status = 'AUTO-SEND TO REP';\n  }\n\n  results.push({\n    json: {\n      email_number: i + 1,\n      status: status,\n      to: sendTo,\n      to_name: toName,\n      cc: sendCc,\n      subject: `${subjectPrefix}FW: DPS - Department Alert System Result #${data.alert_id}`,\n      body: fullHtml,\n      body_text: `${firstName},\\n\\nPlease review the form below and reach out to the customer listed to resolve the issue.`,\n      template_used: templateId,\n      station_codes: recipient.station_codes,\n      intended_recipient: {\n        email: recipient.rep_email,\n        name: recipient.rep_name\n      },\n      input_summary: {\n        alert_id: data.alert_id,\n        ticket_number: data.ticket_number,\n        state: data.states.join(', '),\n        issue_type: data.issue_type\n      }\n    }\n  });\n}\n\nreturn results;\n"
       },
       "name": "Render Template (Preview)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2736,
+        3536,
         208
       ],
       "id": "41701f52-7a8d-4b08-ae0f-79567c202744"
@@ -494,7 +497,7 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        2928,
+        3728,
         -48
       ],
       "id": "b93bc385-a063-4643-b8ae-ee74a1a179cc",
@@ -555,7 +558,7 @@
       "type": "n8n-nodes-base.mailgun",
       "typeVersion": 1,
       "position": [
-        2960,
+        3760,
         512
       ],
       "id": "897d26ce-047d-481c-aff7-de1f086cf178",
@@ -585,7 +588,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Parse Webhook - Extracts data from Formsite webhook\n// Connect this to the Webhook node output\n\nconst webhookData = $input.first().json;\n// Handle both direct items and items nested in body (webhook wrapper)\nconst items = webhookData.items || webhookData.body?.items || [];\n\n// Helper function to find item by ID\nfunction getItemById(id) {\n  return items.find(item => item.id === id || item.id === String(id));\n}\n\n// Helper function to get value from item (handles both direct value and values array)\nfunction getValue(id) {\n  const item = getItemById(id);\n  if (!item) return '';\n\n  // If it has a direct value\n  if (item.value !== undefined) {\n    return item.value;\n  }\n\n  // If it has a values array\n  if (item.values && item.values.length > 0) {\n    return item.values[0].value || '';\n  }\n\n  return '';\n}\n\n// Extract department first - only process Member Services\nconst department = getValue(15);        // \"Member Services\", \"IT\", etc.\n\n// EARLY EXIT: If not Member Services, stop processing\n// Other departments get their normal Formsite emails without automation\nif (!department.toLowerCase().includes('member services')) {\n  return [{\n    json: {\n      _skipped: true,\n      _reason: `Department is \"${department}\" - not Member Services, skipping automation`,\n      department: department\n    }\n  }];\n}\n\n// Extract fields from Formsite\nconst stationCodesRaw = getValue(32);  // \"VACTSTR PGESTK\"\nconst issueType = getValue(16);         // \"No Response\"\nconst stateRaw = getValue(33);          // \"California\"\nconst ticketNumber = getValue(45);      // \"2026012101268\"\nconst customerName = getValue(23);      // Customer name\nconst notes = getValue(6);              // Notes\n\n// Parse station codes from the main field (space, comma, or \"and\" separated)\nconst mainCodes = stationCodesRaw\n  .split(/[\\s,]+|(?:\\s+and\\s+)/i)\n  .map(code => code.trim().toUpperCase())\n  .filter(code => code.length > 0);\n\n// Also extract potential station codes from the notes field\n// Station codes are typically 4-8 uppercase alphanumeric characters\n// Pattern: look for words that look like codes (uppercase, alphanumeric, 3-10 chars)\nfunction extractCodesFromNotes(notesText) {\n  if (!notesText) return [];\n\n  // Split on common separators: comma, space, &, \"and\", periods\n  const words = notesText\n    .split(/[\\s,&.]+|(?:\\s+and\\s+)/i)\n    .map(w => w.trim().toUpperCase())\n    .filter(w => w.length >= 3 && w.length <= 10);\n\n  // Filter to only alphanumeric words that look like station codes\n  // Station codes typically have letters and optionally numbers (e.g., QFRCA3, MEDCTV, PGESJ1)\n  return words.filter(w => /^[A-Z0-9]+$/.test(w) && /[A-Z]/.test(w));\n}\n\nconst notesCodes = extractCodesFromNotes(notes);\n\n// Combine main codes and notes codes, removing duplicates\nconst allCodesSet = new Set([...mainCodes, ...notesCodes]);\nconst stationCodes = Array.from(allCodesSet);\n\n// Parse states (could be multiple)\nconst states = stateRaw\n  .split(/[,\\/]+/)\n  .map(s => s.trim())\n  .filter(s => s.length > 0);\n\n// Generate alert ID from timestamp or use ticket number\nconst alertId = ticketNumber || new Date().getTime().toString();\n\nreturn [{\n  json: {\n    // Main identifiers\n    alert_id: alertId,\n    ticket_number: ticketNumber,\n\n    // Station codes as array (combined from main field + notes, deduplicated)\n    station_codes: stationCodes,\n    member_codes: stationCodes,  // Alias for compatibility\n\n    // Debug: show where codes came from\n    _codes_from_field: mainCodes,\n    _codes_from_notes: notesCodes,\n\n    // Issue categorization\n    issue_type: issueType,\n\n    // Location\n    states: states,\n\n    // Customer info\n    customer_name: customerName,\n    notes: notes,\n\n    // Department (for debugging)\n    department: department,\n\n    // Metadata\n    source: 'formsite_webhook',\n    received_at: webhookData.date_finish || new Date().toISOString(),\n\n    // Raw data for debugging\n    _raw: webhookData\n  }\n}];\n"
+        "jsCode": "// Parse Webhook - Extracts data from Formsite webhook\n// Connect this to the Webhook node output\n\nconst webhookData = $input.first().json;\n// Handle both direct items and items nested in body (webhook wrapper)\nconst items = webhookData.items || webhookData.body?.items || [];\n\n// Helper function to find item by ID\nfunction getItemById(id) {\n  return items.find(item => item.id === id || item.id === String(id));\n}\n\n// Helper function to get value from item (handles both direct value and values array)\nfunction getValue(id) {\n  const item = getItemById(id);\n  if (!item) return '';\n\n  // If it has a direct value\n  if (item.value !== undefined) {\n    return item.value;\n  }\n\n  // If it has a values array\n  if (item.values && item.values.length > 0) {\n    return item.values[0].value || '';\n  }\n\n  return '';\n}\n\n// Extract department first - only process Member Services\nconst department = getValue(15);        // \"Member Services\", \"IT\", etc.\n\n// EARLY EXIT: If not Member Services, stop processing\n// Other departments get their normal Formsite emails without automation\nif (!department.toLowerCase().includes('member services')) {\n  return [{\n    json: {\n      _skipped: true,\n      _reason: `Department is \"${department}\" - not Member Services, skipping automation`,\n      department: department\n    }\n  }];\n}\n\n// Extract fields from Formsite\nconst stationCodesRaw = getValue(32);  // \"VACTSTR PGESTK\"\nconst issueType = getValue(16);         // \"No Response\"\nconst stateRaw = getValue(33);          // \"California\"\nconst ticketNumber = getValue(45);      // \"2026012101268\"\nconst customerName = getValue(23);      // Customer name\nconst notes = getValue(6);              // Notes\n\n// Parse station codes from the main field (space, comma, or \"and\" separated)\nconst mainCodes = stationCodesRaw\n  .split(/[\\s,]+|(?:\\s+and\\s+)/i)\n  .map(code => code.trim().toUpperCase())\n  .filter(code => code.length > 0);\n\n// Also extract potential station codes from the notes field\n// Station codes are typically 4-8 uppercase alphanumeric characters\n// Pattern: look for words that look like codes (uppercase, alphanumeric, 3-10 chars)\nfunction extractCodesFromNotes(notesText) {\n  if (!notesText) return [];\n\n  // Split on common separators: comma, space, &, \"and\", periods\n  const words = notesText\n    .split(/[\\s,&.]+|(?:\\s+and\\s+)/i)\n    .map(w => w.trim().toUpperCase())\n    .filter(w => w.length >= 3 && w.length <= 10);\n\n  // Filter to only alphanumeric words that look like station codes\n  // Station codes typically have letters and optionally numbers (e.g., QFRCA3, MEDCTV, PGESJ1)\n  return words.filter(w => /^[A-Z0-9]+$/.test(w) && /[A-Z]/.test(w));\n}\n\nconst notesCodes = extractCodesFromNotes(notes);\n\n// Combine all candidates (field + notes), deduplicated\nconst allCandidates = [...new Set([...mainCodes, ...notesCodes])];\n\n// Validate ALL candidate codes against HubSpot in ONE API call using IN operator.\n// This filters out English words (CUSTOMER, HAS, THREE, etc.) that the loose\n// regex picks up from notes, while keeping real station codes that DPS agents\n// may have typed in the wrong field.\nlet validatedCodes = mainCodes; // Default: trust field codes if validation fails\n\nif (notesCodes.length > 0) {\n  try {\n    const response = await fetch('https://api.hubapi.com/crm/v3/objects/2-35681060/search', {\n      method: 'POST',\n      headers: {\n        'Authorization': 'Bearer pat-na1-YOUR_HUBSPOT_PAT_HERE',\n        'Content-Type': 'application/json'\n      },\n      body: JSON.stringify({\n        filterGroups: [{\n          filters: [{\n            propertyName: 'station_code',\n            operator: 'IN',\n            values: allCandidates\n          }]\n        }],\n        properties: ['station_code'],\n        limit: 100\n      })\n    });\n\n    const data = await response.json();\n    const validHubSpotCodes = (data.results || [])\n      .map(r => r.properties?.station_code?.toUpperCase())\n      .filter(Boolean);\n\n    validatedCodes = [...new Set(validHubSpotCodes)];\n  } catch (err) {\n    // If validation call fails, fall back to field codes only (safe default)\n    validatedCodes = mainCodes;\n  }\n}\n\nconst stationCodes = validatedCodes;\n\n// Parse states (could be multiple)\nconst states = stateRaw\n  .split(/[,\\/]+/)\n  .map(s => s.trim())\n  .filter(s => s.length > 0);\n\n// Generate alert ID from timestamp or use ticket number\nconst alertId = ticketNumber || new Date().getTime().toString();\n\nreturn [{\n  json: {\n    // Main identifiers\n    alert_id: alertId,\n    ticket_number: ticketNumber,\n\n    // Station codes as array (validated against HubSpot)\n    station_codes: stationCodes,\n    member_codes: stationCodes,  // Alias for compatibility\n\n    // Debug: show where codes came from and validation results\n    _codes_from_field: mainCodes,\n    _codes_from_notes: notesCodes,\n    _all_candidates: allCandidates,\n    _validated_codes: validatedCodes,\n\n    // Issue categorization\n    issue_type: issueType,\n\n    // Location\n    states: states,\n\n    // Customer info\n    customer_name: customerName,\n    notes: notes,\n\n    // Department (for debugging)\n    department: department,\n\n    // Metadata\n    source: 'formsite_webhook',\n    received_at: webhookData.date_finish || new Date().toISOString(),\n\n    // Raw data for debugging\n    _raw: webhookData\n  }\n}];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -595,9 +598,116 @@
       ],
       "id": "e928f49d-817e-4ef7-a766-ff1b8d22de92",
       "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/2-35681060/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer pat-na1-YOUR_HUBSPOT_PAT_HERE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"filterGroups\": [{\n    \"filters\": [{\n      \"propertyName\": \"station_code\",\n      \"operator\": \"EQ\",\n      \"value\": \"{{ $json.station_code }}\"\n    }]\n  }],\n  \"properties\": [\"station_code\", \"station_email\", \"station_contact_name\"],\n  \"limit\": 1\n}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "hubspot-station-lookup",
+      "name": "Lookup HubSpot Station",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        928,
+        144
+      ],
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transform HubSpot response to match existing Process Lookup interface\n// With fallback: if station_email is null, follow Member Representative association\nconst items = $input.all();\nconst explodedItems = $('Explode Codes').all();\nconst results = [];\n\nconst HS_TOKEN = 'Bearer pat-na1-YOUR_HUBSPOT_PAT_HERE';\n\nfor (let i = 0; i < items.length; i++) {\n  const hsResponse = items[i].json;\n  const exploded = explodedItems[i]?.json || {};\n  const stationCode = exploded.station_code;\n  const root = exploded.root;\n\n  const station = hsResponse.results?.[0];\n  let rep_email = station?.properties?.station_email || null;\n  let rep_name = station?.properties?.station_contact_name || null;\n  let _lookup_method = rep_email ? 'direct' : 'none';\n\n  // If no direct email, follow the Member Representative association\n  if (!rep_email && station) {\n    try {\n      const assocData = await this.helpers.httpRequest({\n        method: 'GET',\n        url: `https://api.hubapi.com/crm/v4/objects/2-35681060/${station.id}/associations/contacts`,\n        headers: { 'Authorization': HS_TOKEN }\n      });\n\n      const contactId = assocData.results?.[0]?.toObjectId;\n\n      if (contactId) {\n        const contact = await this.helpers.httpRequest({\n          method: 'GET',\n          url: `https://api.hubapi.com/crm/v3/objects/contacts/${contactId}?properties=email,firstname,lastname`,\n          headers: { 'Authorization': HS_TOKEN }\n        });\n\n        rep_email = contact.properties?.email || null;\n        rep_name = `${contact.properties?.firstname || ''} ${contact.properties?.lastname || ''}`.trim() || null;\n        _lookup_method = rep_email ? 'association' : 'association_no_email';\n      } else {\n        _lookup_method = 'no_association_found';\n      }\n    } catch (err) {\n      _lookup_method = `error: ${err.message}`;\n    }\n  }\n\n  results.push({\n    json: {\n      station_code: stationCode,\n      found: !!rep_email,\n      rep_email: rep_email,\n      rep_name: rep_name,\n      _lookup_method: _lookup_method,\n      root: root\n    }\n  });\n}\n\nreturn results;\n"
+      },
+      "id": "transform-hubspot-response",
+      "name": "Transform HubSpot Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "is-other-condition",
+              "leftValue": "={{ $json.issue_type }}",
+              "rightValue": "Other",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "is-other-if-node",
+      "name": "Is Other?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2624,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Claude Triage - CLASSIFICATION ONLY (routing handled in code)\nconst ANTHROPIC_API_KEY = 'sk-ant-api03-YOUR_ANTHROPIC_KEY_HERE';\n\nconst systemPrompt = `You are an email triage assistant for USA North 811 (USAN) Member Services.\n\nYou analyze DPS (Department Alert System) alerts that came in with issue type \"Other\" and determine the REAL issue category.\n\nBACKGROUND: USAN is a one-call center (811 service). Excavators call before they dig, tickets are generated, and member utilities must respond by locating/marking their underground lines. DPS agents categorize incoming alerts but sometimes select \"Other\" when the issue doesn't fit neatly or when they're unsure.\n\nCLASSIFY into one of these categories:\n\n- \"no_response\": Excavator reports the utility hasn't responded to a locate ticket. Urgent - excavator can't dig until lines are marked.\n  EXAMPLES: \"3rd attempt to get in touch with utility\", \"no response\", \"utility hasn't marked\", \"can't reach member\"\n\n- \"contact_info_issue\": Wrong phone/email on file for the member.\n  EXAMPLES: \"phone number is disconnected\", \"wrong number\", \"can't reach contact\"\n\n- \"member_manually_added\": Station code was manually added to a ticket.\n  EXAMPLES: \"manually added to ticket\", \"no members generated for area\"\n\n- \"locator_complaint\": Excavator complaining about locator behavior or work quality.\n  EXAMPLES: \"locator is unwilling to mark\", \"falsely stating no delineations\", \"wants supervisor\"\n\n- \"aoi_mapping_issue\": Member receiving wrong tickets or wants Area of Interest adjusted.\n  EXAMPLES: \"receiving non-related tickets\", \"decrease work radius\", \"wrong area\"\n\n- \"ticket_delivery_issue\": Member didn't receive a ticket or ticket not showing in system.\n  EXAMPLES: \"could not locate ticket\", \"didn't receive ticket\"\n\n- \"system_status_issue\": Portal/system issues like inactive status, DPP problems, positive response failures.\n  EXAMPLES: \"shows inactive\", \"issues providing positive response\", \"not populating in dropdown\"\n\n- \"general\": Relevant to the member but doesn't fit above categories.\n\nOUTPUT FORMAT (respond with ONLY this JSON, no markdown):\n{\n  \"classified_issue_type\": \"<category from above>\",\n  \"confidence\": \"high|medium|low\",\n  \"reasoning\": \"Brief explanation of classification\",\n  \"inferred_company\": null\n}\n\nIMPORTANT: If the station code is \"N/A\", missing, or invalid (like \"001\"), try to identify the company/utility from the notes and put it in \"inferred_company\". Do NOT include routing decisions - just classify.`;\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const data = item.json;\n  // In live workflow, each item is one recipient from Explode Recipients\n  \n  const stationCodesStr = (data.station_codes || []).join(', ');\n  const statesStr = (data.states || []).join(', ');\n  const repName = data.current_recipient?.rep_name || 'Unknown';\n  const repEmail = data.current_recipient?.rep_email || 'Unknown';\n\n  const userMessage = `Classify this DPS alert:\n\n- Alert ID: ${data.alert_id}\n- Ticket Number: ${data.ticket_number}\n- Station Code(s): ${stationCodesStr}\n- State: ${statesStr}\n- Original Issue Type: Other\n- Customer Name: ${data.customer_name || 'N/A'}\n- Notes: ${data.notes || 'N/A'}\n\nMember Rep on file: ${repName} (${repEmail})`;\n\n  const requestBody = JSON.stringify({\n    model: 'claude-haiku-4-5-20251001',\n    max_tokens: 512,\n    system: systemPrompt,\n    messages: [\n      { role: 'user', content: userMessage }\n    ]\n  });\n\n  try {\n    const response = await this.helpers.httpRequest({\n      method: 'POST',\n      url: 'https://api.anthropic.com/v1/messages',\n      headers: {\n        'x-api-key': ANTHROPIC_API_KEY,\n        'anthropic-version': '2023-06-01',\n        'content-type': 'application/json'\n      },\n      body: requestBody,\n      timeout: 30000\n    });\n\n    results.push({\n      json: {\n        ...data,\n        claude_raw_response: response.content[0].text,\n        claude_model: response.model,\n        claude_usage: response.usage,\n        _prompt_sent: userMessage\n      }\n    });\n  } catch (err) {\n    results.push({\n      json: {\n        ...data,\n        claude_error: err.message,\n        claude_raw_response: null,\n        _fallback: true,\n        _prompt_sent: userMessage\n      }\n    });\n  }\n}\n\nreturn results;"
+      },
+      "id": "claude-triage-live",
+      "name": "Claude Triage",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2848,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Apply Triage Decision - DETERMINISTIC ROUTING RULES\nconst HS_TOKEN = 'Bearer pat-na1-YOUR_HUBSPOT_PAT_HERE';\nconst results = [];\n\n// ===== ROUTING RULES (edit these, not the AI prompt) =====\nconst ROUTE_TO_REP = ['no_response', 'contact_info_issue', 'member_manually_added', 'general'];\nconst ROUTE_TO_MEMBERSERVICES = ['locator_complaint', 'aoi_mapping_issue', 'ticket_delivery_issue'];\n// system_status_issue: route to rep (member needs DPP help from their rep)\n// PGE* station codes: always manual_review\n// N/A or missing station: always memberservices\n// ==========================================================\n\nfor (const item of $input.all()) {\n  const data = item.json;\n\n  // Handle API failure \u2014 safe fallback\n  if (data._fallback || !data.claude_raw_response) {\n    results.push({\n      json: {\n        ...data,\n        triage_decision: {\n          classified_issue_type: 'unknown',\n          confidence: 'none',\n          reasoning: `Claude API failed: ${data.claude_error || 'No response'}`,\n          fallback: true\n        },\n        routing_rule: 'fallback',\n        final_routing: {\n          send_to: 'memberservices@usan.org',\n          send_to_name: 'Member Services',\n          cc: [],\n          template: 'general',\n          is_fallback: true\n        },\n        triage_override: {\n          send_to: 'memberservices@usan.org',\n          send_to_name: 'Member Services',\n          cc: [],\n          classified_issue_type: 'unknown',\n          confidence: 'none',\n          reasoning: 'AI triage failed - fallback to memberservices',\n          is_fallback: true,\n          requires_human_review: false\n        }\n      }\n    });\n    continue;\n  }\n\n  // Parse Claude's classification\n  let triage;\n  try {\n    let rawText = data.claude_raw_response.trim();\n    if (rawText.startsWith('```')) {\n      rawText = rawText.replace(/^```(?:json)?\\n?/, '').replace(/\\n?```$/, '').trim();\n    }\n    triage = JSON.parse(rawText);\n  } catch (err) {\n    results.push({\n      json: {\n        ...data,\n        triage_decision: {\n          classified_issue_type: 'parse_error',\n          confidence: 'none',\n          reasoning: `Failed to parse: ${err.message}`,\n          raw_response: data.claude_raw_response,\n          fallback: true\n        },\n        routing_rule: 'fallback',\n        final_routing: {\n          send_to: 'memberservices@usan.org',\n          send_to_name: 'Member Services',\n          cc: [],\n          template: 'general',\n          is_fallback: true\n        },\n        triage_override: {\n          send_to: 'memberservices@usan.org',\n          send_to_name: 'Member Services',\n          cc: [],\n          classified_issue_type: 'unknown',\n          confidence: 'none',\n          reasoning: 'AI triage failed - fallback to memberservices',\n          is_fallback: true,\n          requires_human_review: false\n        }\n      }\n    });\n    continue;\n  }\n\n  const classification = triage.classified_issue_type;\n  const stationCodes = data.station_codes || [];\n  const recipient = data.current_recipient || {};\n\n  // ===== DETERMINISTIC ROUTING LOGIC =====\n\n  let routeTo;\n  let routingRule;\n\n  // Rule 1: PGE station codes \u2192 always manual_review\n  const hasPGE = stationCodes.some(c => (c || '').toUpperCase().startsWith('PGE'));\n  if (hasPGE) {\n    routeTo = 'manual_review';\n    routingRule = 'pge_manual_review';\n  }\n  // Rule 2: N/A or missing station \u2192 memberservices (can't identify rep)\n  else if (stationCodes.length === 0 || stationCodes.every(c => !c || c === 'N/A' || c === '001')) {\n    routeTo = 'memberservices';\n    routingRule = 'no_valid_station';\n  }\n  // Rule 3: Classification-based routing\n  else if (ROUTE_TO_REP.includes(classification)) {\n    routeTo = 'rep';\n    routingRule = 'classification_to_rep';\n  }\n  else if (ROUTE_TO_MEMBERSERVICES.includes(classification)) {\n    routeTo = 'memberservices';\n    routingRule = 'classification_to_memberservices';\n  }\n  // Rule 4: system_status_issue \u2192 rep (member needs DPP help)\n  else if (classification === 'system_status_issue') {\n    routeTo = 'rep';\n    routingRule = 'system_status_to_rep';\n  }\n  // Rule 5: Unknown classification \u2192 memberservices\n  else {\n    routeTo = 'memberservices';\n    routingRule = 'unknown_classification_fallback';\n  }\n\n  // ===== BUILD FINAL ROUTING =====\n\n  let finalRouting;\n  let inferredLookup = null;\n\n  // If routing to rep but we need to infer the company\n  if (routeTo === 'rep' && triage.inferred_company && !recipient.rep_email) {\n    try {\n      const searchResponse = await this.helpers.httpRequest({\n        method: 'POST',\n        url: 'https://api.hubapi.com/crm/v3/objects/2-35681060/search',\n        headers: { 'Authorization': HS_TOKEN, 'Content-Type': 'application/json' },\n        body: JSON.stringify({\n          filterGroups: [{\n            filters: [{\n              propertyName: 'station_code',\n              operator: 'CONTAINS_TOKEN',\n              value: triage.inferred_company.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10)\n            }]\n          }],\n          properties: ['station_code', 'station_email', 'station_contact_name'],\n          limit: 5\n        })\n      });\n      if (searchResponse.results && searchResponse.results.length > 0) {\n        const station = searchResponse.results[0];\n        inferredLookup = {\n          found: true,\n          station_code: station.properties?.station_code,\n          rep_email: station.properties?.station_email,\n          rep_name: station.properties?.station_contact_name\n        };\n      } else {\n        inferredLookup = { found: false, searched_for: triage.inferred_company };\n        routeTo = 'memberservices';\n        routingRule += '_inferred_not_found';\n      }\n    } catch (err) {\n      inferredLookup = { found: false, error: err.message };\n      routeTo = 'memberservices';\n      routingRule += '_lookup_error';\n    }\n  }\n\n  switch (routeTo) {\n    case 'rep': {\n      const repEmail = inferredLookup?.rep_email || recipient.rep_email;\n      const repName = inferredLookup?.rep_name || recipient.rep_name;\n      finalRouting = {\n        send_to: repEmail || 'memberservices@usan.org',\n        send_to_name: repName || 'Member Services',\n        cc: triage.confidence === 'low' ? ['memberservices@usan.org'] : [],\n        template: classification,\n        is_fallback: !repEmail\n      };\n      break;\n    }\n    case 'manual_review':\n      finalRouting = {\n        send_to: 'memberservices@usan.org',\n        send_to_name: 'Member Services',\n        cc: [],\n        template: 'manual_review',\n        requires_human_review: true,\n        is_fallback: false\n      };\n      break;\n    default:\n      finalRouting = {\n        send_to: 'memberservices@usan.org',\n        send_to_name: 'Member Services',\n        cc: [],\n        template: classification,\n        is_fallback: false\n      };\n  }\n\n  // Set triage_override for Render Template to use\n  results.push({\n    json: {\n      ...data,\n      triage_decision: triage,\n      routing_rule: routingRule,\n      inferred_lookup: inferredLookup,\n      final_routing: finalRouting,\n      triage_override: {\n        send_to: finalRouting.send_to,\n        send_to_name: finalRouting.send_to_name,\n        cc: finalRouting.cc || [],\n        classified_issue_type: triage.classified_issue_type,\n        confidence: triage.confidence,\n        reasoning: triage.reasoning,\n        is_fallback: finalRouting.is_fallback || false,\n        requires_human_review: finalRouting.requires_human_review || false\n      }\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "apply-triage-live",
+      "name": "Apply Triage Decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3072,
+        560
+      ]
     }
   ],
-  "pinData": {},
   "connections": {
     "Test Input Form": {
       "main": [
@@ -643,18 +753,7 @@
       "main": [
         [
           {
-            "node": "Lookup Sheets",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Lookup Sheets": {
-      "main": [
-        [
-          {
-            "node": "Process Lookup",
+            "node": "Lookup HubSpot Station",
             "type": "main",
             "index": 0
           }
@@ -770,11 +869,12 @@
       "main": [
         [
           {
-            "node": "Render Template (Preview)",
+            "node": "Is Other?",
             "type": "main",
             "index": 0
           }
-        ]
+        ],
+        []
       ]
     },
     "Mailgun": {
@@ -814,9 +914,70 @@
       "main": [
         []
       ]
+    },
+    "Lookup HubSpot Station": {
+      "main": [
+        [
+          {
+            "node": "Transform HubSpot Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform HubSpot Response": {
+      "main": [
+        [
+          {
+            "node": "Process Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Other?": {
+      "main": [
+        [
+          {
+            "node": "Claude Triage",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Render Template (Preview)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Triage": {
+      "main": [
+        [
+          {
+            "node": "Apply Triage Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Triage Decision": {
+      "main": [
+        [
+          {
+            "node": "Render Template (Preview)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": true,
   "settings": {
     "executionOrder": "v1",
     "saveManualExecutions": true,
@@ -826,11 +987,998 @@
     "timeSavedMode": "fixed",
     "timeSavedPerExecution": 7
   },
-  "versionId": "29505abc-ffca-4bdd-8c3a-83efdc20238f",
+  "staticData": null,
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "39486d70becb20e2f15ef3a37b6e4d49d57a64aafeffb50c4f42442616721bf5"
+    "templateCredsSetupCompleted": true
   },
-  "id": "djhJ7QRU90IYXtm1",
-  "tags": []
+  "pinData": {},
+  "activeVersionId": "ae10c211-2702-4cbe-bd69-94834ef13550",
+  "versionCounter": 60,
+  "triggerCount": 2,
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-24T18:44:37.422Z",
+    "createdAt": "2026-02-24T18:44:37.422Z",
+    "versionId": "ae10c211-2702-4cbe-bd69-94834ef13550",
+    "workflowId": "djhJ7QRU90IYXtm1",
+    "nodes": [
+      {
+        "parameters": {
+          "formTitle": "DPS Alert Test Input",
+          "formDescription": "Enter test data to simulate a DPS alert email",
+          "formFields": {
+            "values": [
+              {
+                "fieldLabel": "Alert ID",
+                "placeholder": "17191747",
+                "requiredField": true
+              },
+              {
+                "fieldLabel": "Ticket Number",
+                "placeholder": "2026011403358",
+                "requiredField": true
+              },
+              {
+                "fieldLabel": "Station Code(s)",
+                "placeholder": "VACSTR, PGECO",
+                "requiredField": true
+              },
+              {
+                "fieldLabel": "State",
+                "fieldType": "dropdown",
+                "fieldOptions": {
+                  "values": [
+                    {
+                      "option": "California"
+                    },
+                    {
+                      "option": "Nevada"
+                    }
+                  ]
+                },
+                "requiredField": true
+              },
+              {
+                "fieldLabel": "Issue Type",
+                "fieldType": "dropdown",
+                "fieldOptions": {
+                  "values": [
+                    {
+                      "option": "No Response"
+                    },
+                    {
+                      "option": "Member Manually Added to Ticket"
+                    },
+                    {
+                      "option": "Contact Info Issue"
+                    },
+                    {
+                      "option": "General"
+                    }
+                  ]
+                },
+                "requiredField": true
+              },
+              {
+                "fieldLabel": "Customer Name",
+                "placeholder": "John Smith"
+              },
+              {
+                "fieldLabel": "Additional Notes",
+                "fieldType": "textarea",
+                "placeholder": "Caller concerned over storm drain"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "name": "Test Input Form",
+        "type": "n8n-nodes-base.formTrigger",
+        "typeVersion": 2.2,
+        "position": [
+          -256,
+          -112
+        ],
+        "webhookId": "dps-test-form",
+        "id": "7a5733f4-46a7-4dd7-b8c7-1302521dc8ad"
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\n\nconst parsed = {\n  alert_id: input['Alert ID'] || `test_${Date.now()}`,\n  ticket_number: input['Ticket Number'] || '',\n  member_codes_raw: input['Station Code(s)'] || '',\n  issue_type: input['Issue Type'] || '',\n  states_raw: input['State'] || '',\n  customer_name: input['Customer Name'] || '',\n  notes: input['Additional Notes'] || '',\n  source: 'manual_test',\n  received_at: new Date().toISOString(),\n  email_message_id: `test_${Date.now()}`,\n  original_subject: `DPS - Department Alert System Result #${input['Alert ID']}`,\n  original_body: 'Test input - no original email body'\n};\n\n// More forgiving parsing - handles lowercase, extra spaces, various delimiters\nparsed.member_codes = parsed.member_codes_raw \n  ? parsed.member_codes_raw\n      .split(/[,;\\s]+/)                          // Split on comma, semicolon, whitespace\n      .map(c => c.trim().toUpperCase())          // Trim and UPPERCASE\n      .filter(c => c.length > 0)                 // Remove empty strings\n  : [];\n\nparsed.states = parsed.states_raw ? [parsed.states_raw] : [];\n\nconst normalizedCodes = (parsed.member_codes || []).slice().sort().join(',');\nconst keySource = `${parsed.alert_id}|${parsed.ticket_number}|${normalizedCodes}`;\nparsed.idempotency_key = keySource.split('').reduce((a,b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0).toString(16);\nparsed.notes_preview = (parsed.notes || '').substring(0, 200);\n\nreturn [{ json: parsed }];\n"
+        },
+        "name": "Parse Test Input",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          48,
+          192
+        ],
+        "id": "cf36fbd5-862c-4c98-ba5a-6e459a8b532d"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "id": "has-codes",
+                "leftValue": "={{ $json.member_codes.length }}",
+                "rightValue": 0,
+                "operator": {
+                  "type": "number",
+                  "operation": "gt"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "name": "Has Codes?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          528,
+          400
+        ],
+        "id": "b9eb7980-38c5-4fb9-949f-9b4d58fc8c9e"
+      },
+      {
+        "parameters": {
+          "jsCode": "const parsed = $input.first().json;\nreturn [{ json: { ...parsed, exception: true, exception_type: 'missing_station_code', exception_reason: 'No station code provided' } }];"
+        },
+        "name": "No Codes Exception",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1072,
+          896
+        ],
+        "id": "da23d667-f427-4f0f-97c3-707b2c989f14"
+      },
+      {
+        "parameters": {
+          "jsCode": "const parsed = $input.first().json;\nreturn parsed.member_codes.map(code => ({ json: { station_code: code, root: parsed } }));"
+        },
+        "name": "Explode Codes",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          672,
+          -128
+        ],
+        "id": "06c173b0-e315-4709-a7de-fb4775fea618"
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "19IIMKYbgkij4Q2PeDx8mpKzf_Q3pyhVzmy0xsb8hmXA"
+          },
+          "sheetName": {
+            "__rl": true,
+            "mode": "name",
+            "value": "station_rep_mapping"
+          },
+          "filtersUI": {
+            "values": [
+              {
+                "lookupColumn": "station_code",
+                "lookupValue": "={{ $json.station_code }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "name": "Lookup Sheets",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          1056,
+          368
+        ],
+        "id": "5c80139e-973e-4aa9-868b-a061607d8fb0",
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "hNgQTykrjXrpQiwu",
+            "name": "Google Sheets account"
+          }
+        },
+        "disabled": true
+      },
+      {
+        "parameters": {
+          "jsCode": "const items = $input.all();\nconst explodedItems = $('Explode Codes').all();\nconst results = [];\n\nfor (let i = 0; i < explodedItems.length; i++) {\n  const exploded = explodedItems[i].json;\n  const stationCode = exploded.station_code;\n  const root = exploded.root;\n\n  // Find the matching lookup result for this station code\n  const lookup = items.find(item => {\n    const lookupCode = (item.json.station_code || '').toUpperCase();\n    return lookupCode === stationCode.toUpperCase();\n  });\n\n  const hasResult = lookup && lookup.json && lookup.json.rep_email;\n\n  results.push({\n    json: {\n      station_code: stationCode,\n      found: hasResult,\n      rep_email: lookup?.json?.rep_email || null,\n      rep_name: lookup?.json?.rep_name || null,\n      root: root\n    }\n  });\n}\n\nreturn results;\n"
+        },
+        "name": "Process Lookup",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1312,
+          176
+        ],
+        "id": "ea8c4e86-2101-45cd-bc1d-5699ee6c4437"
+      },
+      {
+        "parameters": {
+          "jsCode": "const items = $input.all();\nconst root = items[0].json.root;\nconst repMap = new Map();\nconst matchedCodes = [];\nconst unmatchedCodes = [];\n\nfor (const item of items) {\n  const code = item.json.station_code;\n  if (item.json.found && item.json.rep_email) {\n    matchedCodes.push(code);\n    const emailKey = item.json.rep_email.toLowerCase();\n    if (!repMap.has(emailKey)) {\n      repMap.set(emailKey, { rep_email: item.json.rep_email, rep_name: item.json.rep_name || 'Member Rep', station_codes: [] });\n    }\n    repMap.get(emailKey).station_codes.push(code);\n  } else {\n    unmatchedCodes.push(code);\n  }\n}\n\nconst recipients = Array.from(repMap.values());\n\nreturn [{\n  json: {\n    ...root,\n    routing: {\n      recipients,\n      matched_codes: matchedCodes,\n      unmatched_codes: unmatchedCodes,\n      has_exceptions: unmatchedCodes.length > 0,\n      all_unmatched: recipients.length === 0\n    }\n  }\n}];"
+        },
+        "name": "Aggregate Recipients",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1568,
+          448
+        ],
+        "id": "37f74f5a-43ee-42a4-bf67-6c91e0cd9e99"
+      },
+      {
+        "parameters": {
+          "jsCode": "const data = $input.first().json;\nconst notes = (data.notes || '').toLowerCase();\nconst issueType = (data.issue_type || '').toLowerCase();\nconst states = (data.states || []).map(s => s.toLowerCase());\nconst isCA = states.some(s => s.includes('california') || s === 'ca');\nconst isNV = states.some(s => s.includes('nevada') || s === 'nv');\nconst isNoResponse = issueType.includes('no response') || notes.includes('no response') || notes.includes('non-response');\nconst isManuallyAdded = issueType.includes('manually added') || issueType.includes('manual add');\nconst isContactIssue = notes.includes('contact') || notes.includes('wrong number') || notes.includes('wrong email') || issueType.includes('contact');\n\nconst templates = [\n  {\n    id: 'no_response_ca',\n    match: () => isCA && isNoResponse,\n    subject: 'No Response Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the form below and reach out to the customer listed to resolve the issue.\\n\\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP) as required by California Code 4216 (https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?lawCode=GOV&division=5.&title=1.&part=&chapter=3.1.&article=2).\\n\\n\u2022 How to use Electronic Positive Response - https://www.youtube.com/watch?v=c1b6HlX-fx4\\n\\nThank you,'\n  },\n  {\n    id: 'no_response_nv',\n    match: () => isNV && isNoResponse,\n    subject: 'No Response Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the form below and reach out to the customer listed to resolve the issue.\\n\\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP) as required by NRS 455.\\n\\n\u2022 How to use Electronic Positive Response - https://www.youtube.com/watch?v=c1b6HlX-fx4\\n\\nThank you,'\n  },\n  {\n    id: 'no_response_generic',\n    match: () => isNoResponse,\n    subject: 'No Response Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the form below and reach out to the customer listed to resolve the issue.\\n\\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP).\\n\\n\u2022 How to use Electronic Positive Response - https://www.youtube.com/watch?v=c1b6HlX-fx4\\n\\nThank you,'\n  },\n  {\n    id: 'contact_info_issue',\n    match: () => isContactIssue,\n    subject: 'Contact Info Issue: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the email below from one of our agents for reference and reach out to the excavator on the ticket to resolve the issue.\\n\\nIf you need to update your Member Contact information within the Damage Prevention Portal, please use the link below to sign in. Then navigate to the station details for your station code (Settings > OneCallAccess).\\n\\nNV DPP Login Page - https://appsnv.undergroundservicealert.org/pcadmin/Account/Login\\nCA DPP Login Page - https://appsca.undergroundservicealert.org/pcadmin/Account/Login?returnUrl=%2Fpcadmin%2FOperations - The Damage Prevention Portal is where you can manage your mapping, contact info, and ticket delivery.\\n\\nContact Information can be found under Settings - OneCallAccess then clicking on your Station Code.\\nThe Member Contact is displayed on each ticket available for the excavator.\\nThe Member IT contact is not displayed on the ticket and is meant for the Member Rep.\\n\\nPlease let me know if you have any questions.\\n\\nThank you,'\n  },\n  {\n    id: 'member_manually_added',\n    match: () => isManuallyAdded,\n    subject: 'Manual Add Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: 'Hello {{rep_name}},\\n\\nPlease review the email below from one of our agents for reference. The station code {{station_codes}} has been manually added to ticket# {{ticket_number}} at the request of the excavator.\\n\\nIf you need to update your Area of Interest, please visit the Damage Prevention Portal using the link below.\\n\\nCA DPP Login Page - https://appsca.undergroundservicealert.org/pcadmin/Account/Login?returnUrl=%2Fpcadmin%2FOperations - The Damage Prevention Portal is where you can manage your mapping, contact info, and ticket delivery.\\n\\nArea of Interest (AOI) can be found under Settings - OneCallAccess and clicking on your Station Code, then clicking on Area of Interest.\\nHere is a video that goes into more detail: How to manage your Area of Interest - https://www.youtube.com/watch?v=KZzHnITi-3Q&feature=youtu.be\\n\\nThank you,'\n  },\n  {\n    id: 'general',\n    match: () => true,\n    subject: 'DPS Alert: Ticket #{{ticket_number}} - {{station_codes}}',\n    body: '{{rep_name}}, please review the form below and take appropriate action.\\n\\nTicket Number: {{ticket_number}}\\nStation Code(s): {{station_codes}}\\nState(s): {{states}}\\nIssue Type: {{issue_type}}\\n\\nAdditional Notes:\\n{{notes}}\\n\\nThank you,'\n  }\n];\n\nconst template = templates.find(t => t.match());\n\nreturn [{\n  json: {\n    ...data,\n    template: {\n      id: template.id,\n      subject_template: template.subject,\n      body_template: template.body\n    }\n  }\n}];"
+        },
+        "name": "Select Template",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1856,
+          176
+        ],
+        "id": "ad003e8f-a6c1-4bc5-920d-8df1072e12c9"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "has-recipients",
+                "leftValue": "={{ $json.routing.recipients.length }}",
+                "rightValue": 0,
+                "operator": {
+                  "type": "number",
+                  "operation": "gt"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "name": "Has Recipients?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          2096,
+          528
+        ],
+        "id": "9a1acf32-f32c-48e5-bd62-653fe865e4ad"
+      },
+      {
+        "parameters": {
+          "jsCode": "const data = $input.first().json;\nreturn [{\n  json: {\n    status: 'EXCEPTION - ALL CODES UNMATCHED',\n    exception_type: 'unknown_station_code',\n    exception_reason: `Unknown station code(s): ${data.routing.unmatched_codes.join(', ')}`,\n    input_data: {\n      alert_id: data.alert_id,\n      ticket_number: data.ticket_number,\n      station_codes: data.member_codes,\n      state: data.states\n    }\n  }\n}];"
+        },
+        "name": "All Unmatched Exception",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2528,
+          960
+        ],
+        "id": "2991601b-d1d6-4ba2-ba94-303f991912c4"
+      },
+      {
+        "parameters": {
+          "jsCode": "const data = $input.first().json;\nconst recipients = data.routing.recipients;\n\nreturn recipients.map(recipient => ({\n  json: {\n    ...data,\n    current_recipient: recipient,\n    station_codes_for_recipient: recipient.station_codes.join(', ')\n  }\n}));"
+        },
+        "name": "Explode Recipients",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2304,
+          176
+        ],
+        "id": "f12287e0-adc0-4f82-ac6d-cefd47bd301b"
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "documentId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "19IIMKYbgkij4Q2PeDx8mpKzf_Q3pyhVzmy0xsb8hmXA"
+          },
+          "sheetName": {
+            "__rl": true,
+            "mode": "name",
+            "value": "alert_log"
+          },
+          "columns": {
+            "mappingMode": "autoMapInputData",
+            "value": {},
+            "matchingColumns": [
+              "id"
+            ],
+            "schema": [
+              {
+                "id": "status",
+                "displayName": "status",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true,
+                "removed": false
+              },
+              {
+                "id": "to",
+                "displayName": "to",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true,
+                "removed": false
+              },
+              {
+                "id": "to_name",
+                "displayName": "to_name",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true,
+                "removed": false
+              },
+              {
+                "id": "subject",
+                "displayName": "subject",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true,
+                "removed": false
+              },
+              {
+                "id": "body",
+                "displayName": "body",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true,
+                "removed": false
+              },
+              {
+                "id": "template_used",
+                "displayName": "template_used",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true,
+                "removed": false
+              },
+              {
+                "id": "station_codes",
+                "displayName": "station_codes",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true,
+                "removed": false
+              },
+              {
+                "id": "input_summary",
+                "displayName": "input_summary",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true,
+                "removed": false
+              },
+              {
+                "id": "email_number",
+                "displayName": "email_number",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true,
+                "removed": false
+              },
+              {
+                "id": "cc",
+                "displayName": "cc",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true,
+                "removed": false
+              },
+              {
+                "id": "id",
+                "displayName": "id",
+                "required": false,
+                "defaultMatch": true,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true,
+                "removed": false
+              },
+              {
+                "id": "threadId",
+                "displayName": "threadId",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true,
+                "removed": false
+              },
+              {
+                "id": "labelIds",
+                "displayName": "labelIds",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true,
+                "removed": false
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
+          },
+          "options": {}
+        },
+        "name": "Log to Sheet",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          3968,
+          208
+        ],
+        "id": "672ebbe7-9c57-4252-a8a9-56bdb1087927",
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "hNgQTykrjXrpQiwu",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// Add this as a new Code node AFTER \"Log to Sheet\"\n// Name it: Email Summary\n\nconst items = $input.all();\nconst emails = items.map((item, idx) => item.json);\n\nconst summary = {\n  total_emails_generated: emails.length,\n  emails: emails.map(e => ({\n    email_num: e.email_number || 1,\n    to: `${e.to_name} <${e.to}>`,\n    cc: (e.cc || []).join(', '),\n    subject: e.subject,\n    template: e.template_used,\n    station_codes: (e.station_codes || []).join(', '),\n    body_preview: (e.body || '').substring(0, 300) + '...'\n  }))\n};\n\nreturn [{ json: summary }];\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          4192,
+          208
+        ],
+        "id": "a0ba5aec-dda7-408f-b577-5f41de67b18c",
+        "name": "Email Summary"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Render Template - HTML Email Format\n// Replace the code in \"Render Template (Preview)\" with this\n\nconst allItems = $input.all();\nconst results = [];\n\nconst CC_RECIPIENTS = [\n  'trevor.harris@usan.org',\n  'centeroperations@usanorth811.org',\n  'germain.suess@usan.org',\n  'christian.olesen@usan.org'\n];\n\n// MANUAL REVIEW MODE - Set to true for testing (all emails go to reviewer)\nconst MANUAL_REVIEW_MODE = false;\nconst REVIEWER_EMAIL = 'christian.olesen@usan.org';  // Only used if MANUAL_REVIEW_MODE is true\n\n// EXCEPTION CODES - Route to manual review (PG&E only - ATTDNORCAL handled separately below)\nconst MANUAL_REVIEW_CODES = [\n  // PG&E codes - different process for Steve Cleaver\n  'PGEYLO', 'PGESJ1', 'PGEMSV', 'PGEHAY', 'PGEGVY', 'PGEUET', 'PGEHIN', 'PGEVJO',\n  'PGENPA', 'PGESAL', 'PGERID', 'PGEBR2', 'PGESJO', 'PGECND', 'PGERBF', 'PGEBUR',\n  'PGEFNO', 'PGEOAK', 'PGESLO', 'PGEVAC', 'PGEPLA', 'PGECLM', 'PGEUKH', 'PGEMER',\n  'PGEMDO', 'PGEBEL', 'PGESRO', 'PGERCH', 'PGEBFD', 'PGESRF', 'PGEEUR', 'PGESFO',\n  'PGECHI', 'PGEAUB', 'PGECUP', 'PGEORO', 'PGERED', 'PGESAC', 'PGESTK'\n];\n\n// Check if any station codes require PG&E manual review\nfunction requiresManualReview(stationCodes) {\n  return stationCodes.some(code => MANUAL_REVIEW_CODES.includes(code.toUpperCase()));\n}\n\n// Issue types that route to memberservices (but with normal email format)\nconst MEMBERSERVICES_ISSUE_TYPES = ['other'];\n\nfunction issueTypeRoutesToMemberServices(issueType) {\n  return MEMBERSERVICES_ISSUE_TYPES.includes((issueType || '').toLowerCase());\n}\n\nfunction render(tmpl, vars) {\n  let result = tmpl;\n  for (const [key, value] of Object.entries(vars)) {\n    result = result.replace(new RegExp(`\\\\{\\\\{${key}\\\\}\\\\}`, 'g'), value || '');\n  }\n  return result;\n}\n\n// HTML Signature - Matches Outlook signature format\nconst LOGO_URL = 'https://i.imgur.com/v6diEdK.jpg';\nconst BANNER_URL = 'https://i.imgur.com/HfkbUwp.png';\n\nconst SIGNATURE_HTML = `\n<p style=\"font-family: Aptos, sans-serif; font-size: 12pt;\">Thank you,</p>\n<br>\n<table cellspacing=\"0\" cellpadding=\"0\" style=\"border-collapse: collapse;\">\n  <tr>\n    <td style=\"padding-right: 15px; vertical-align: top; border-right: 1.5pt solid #000;\">\n      <img src=\"${LOGO_URL}\" alt=\"USAN 811\" width=\"175\" style=\"max-width: 175px;\">\n    </td>\n    <td style=\"padding-left: 15px; vertical-align: top;\">\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><b>Christian Olesen</b></p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">Member Services Specialist</p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">REDACTED_PHONE</p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><a href=\"http://www.undergroundservicealert.org/\" style=\"color: #0563c1;\">undergroundservicealert.org</a></p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\">4005 Port Chicago Hwy #100 Concord, CA 94520</p>\n      <p style=\"margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;\"><a href=\"https://calendly.com/christian-olesen-usan/30min\" style=\"color: #4c94d8;\"><b>Christian's Availability</b></a></p>\n    </td>\n  </tr>\n</table>\n<br>\n<a href=\"https://www.undergroundservicealert.org/damage-prevention-portal/\"><img src=\"${BANNER_URL}\" alt=\"NEW Damage Prevention Portal\" width=\"450\" style=\"max-width: 450px;\"></a>\n<br><br>\n<p style=\"font-size: 9pt; color: #666; font-family: Aptos, sans-serif;\">This message contains confidential information and is intended only for the intended recipients. If you are not an intended recipient you should not disseminate, distribute or copy this e-mail. Please notify us immediately by e-mail if you have received this e-mail by mistake and delete this e-mail from your system.</p>\n`;\n\n// Helper function to build forwarded section (needed early for ATTDNORCAL)\nfunction buildForwardedSection(data, stationCodes) {\n  return `\n<hr style=\"border: none; border-top: 1px solid #ccc; margin: 20px 0;\">\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n<strong>From:</strong> noreply@fs26.formsite.com<br>\n<strong>Sent:</strong> ${new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}<br>\n<strong>To:</strong> Member Services &lt;memberservices@usan.org&gt;<br>\n<strong>Subject:</strong> DPS - Department Alert System Result #${data.alert_id}\n</p>\n<table style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt; border-collapse: collapse; margin-top: 15px;\" cellpadding=\"8\">\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Reference #</strong></td><td style=\"border: 1px solid #ddd;\">${data.alert_id}</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Status</strong></td><td style=\"border: 1px solid #ddd;\">Complete</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Primary issue or request</strong></td><td style=\"border: 1px solid #ddd;\">${data.issue_type}</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Member Code</strong></td><td style=\"border: 1px solid #ddd;\">${stationCodes.join(', ')}</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>State</strong></td><td style=\"border: 1px solid #ddd;\">${data.states.join(', ')}</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Ticket Number(s)</strong></td><td style=\"border: 1px solid #ddd;\">${(data.ticket_numbers || [data.ticket_number]).join(', ')}</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Customer Name</strong></td><td style=\"border: 1px solid #ddd;\">${data.customer_name || 'N/A'}</td></tr>\n  <tr><td style=\"border: 1px solid #ddd; background: #f5f5f5;\"><strong>Additional Notes</strong></td><td style=\"border: 1px solid #ddd;\">${data.notes || 'N/A'}</td></tr>\n</table>\n`;\n}\n\nfor (let i = 0; i < allItems.length; i++) {\n  const data = allItems[i].json;\n  const template = data.template;\n  const recipient = data.current_recipient;\n\n  // Build forwarded section early (needed for all paths)\n  const forwardedSection = buildForwardedSection(data, recipient.station_codes);\n\n  // ============================================\n  // SPECIAL HANDLING #1: ATTDNORCAL \u2192 Utiliquest team (Shant, Eduardo, Dawn)\n  // ============================================\n  const hasATTDNORCAL = recipient.station_codes.some(c => c.toUpperCase() === 'ATTDNORCAL');\n\n  if (hasATTDNORCAL) {\n    // Utiliquest team recipients\n    const utiliquestTo = 'REDACTED_EMAIL';\n    const utiliquestCcReal = [\n      'REDACTED_EMAIL',\n      'REDACTED_EMAIL',\n      ...CC_RECIPIENTS\n    ];\n\n    // Review header for manual mode\n    const attReviewHeader = MANUAL_REVIEW_MODE ? `\n<div style=\"background: #d4edda; border: 2px solid #28a745; padding: 15px; margin-bottom: 20px; font-family: Arial, sans-serif;\">\n  <h3 style=\"margin: 0 0 10px 0; color: #155724;\">\ud83d\udccb ATTDNORCAL - REVIEW BEFORE SENDING</h3>\n  <p style=\"margin: 5px 0;\"><strong>Send To:</strong> Shant Simonian &lt;REDACTED_EMAIL&gt;</p>\n  <p style=\"margin: 5px 0;\"><strong>CC:</strong> REDACTED_EMAIL, REDACTED_EMAIL, ${CC_RECIPIENTS.join(', ')}</p>\n  <p style=\"margin: 5px 0;\"><strong>Station Code(s):</strong> ${recipient.station_codes.join(', ')}</p>\n  <hr style=\"border: none; border-top: 1px solid #28a745; margin: 10px 0;\">\n  <p style=\"margin: 0; font-size: 11px; color: #155724;\">Review the email below, then forward to Utiliquest team.</p>\n</div>\n` : '';\n\n    const utiliquestBody = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n</head>\n<body style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n${attReviewHeader}\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nShant,\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nAn excavator has reported a no response on the ticket(s) below, please pay extra attention to this ticket and respond as soon as possible.\n</p>\n${SIGNATURE_HTML}\n${forwardedSection}\n</body>\n</html>\n`;\n\n    // In manual review mode, send to reviewer; otherwise send to Utiliquest\n    const sendTo = MANUAL_REVIEW_MODE ? REVIEWER_EMAIL : utiliquestTo;\n    const sendCc = MANUAL_REVIEW_MODE ? [] : utiliquestCcReal;\n    const sendToName = MANUAL_REVIEW_MODE ? 'Reviewer' : 'Shant';\n    const subjectPrefix = MANUAL_REVIEW_MODE ? '[REVIEW] ATTDNORCAL - ' : '';\n\n    results.push({\n      json: {\n        email_number: results.length + 1,\n        status: MANUAL_REVIEW_MODE ? 'ATTDNORCAL - PENDING REVIEW' : 'UTILIQUEST NOTIFICATION',\n        to: sendTo,\n        to_name: sendToName,\n        cc: sendCc,\n        subject: `${subjectPrefix}FW: DPS - Department Alert System Result #${data.alert_id}`,\n        body: utiliquestBody,\n        body_text: 'Shant,\\n\\nAn excavator has reported a no response on the ticket(s) below, please pay extra attention to this ticket and respond as soon as possible.',\n        template_used: 'attdnorcal_utiliquest',\n        station_codes: recipient.station_codes,\n        intended_recipient: {\n          email: utiliquestTo,\n          name: 'Shant Simonian'\n        },\n        input_summary: {\n          alert_id: data.alert_id,\n          ticket_number: data.ticket_number,\n          state: data.states.join(', '),\n          issue_type: data.issue_type\n        }\n      }\n    });\n    continue; // Skip normal processing\n  }\n\n  // ============================================\n  // SPECIAL HANDLING #2: PG&E codes \u2192 Manual review to memberservices\n  // ============================================\n  const needsCodeReview = requiresManualReview(recipient.station_codes);\n\n  if (needsCodeReview) {\n    const manualReviewBody = `\n<!DOCTYPE html>\n<html>\n<head><meta charset=\"utf-8\"></head>\n<body style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n<h2 style=\"color: #cc0000;\">\u26a0\ufe0f MANUAL ATTENTION REQUIRED</h2>\n<p><strong>Reason:</strong> PG&E code - Different process for Steve Cleaver</p>\n<hr>\n<p><strong>Original Recipient:</strong> ${recipient.rep_name} &lt;${recipient.rep_email}&gt;</p>\n<p><strong>Station Code(s):</strong> ${recipient.station_codes.join(', ')}</p>\n<p><strong>Ticket Number:</strong> ${data.ticket_number}</p>\n<p><strong>Alert ID:</strong> ${data.alert_id}</p>\n<p><strong>Issue Type:</strong> ${data.issue_type}</p>\n<p><strong>State:</strong> ${data.states.join(', ')}</p>\n<p><strong>Customer:</strong> ${data.customer_name || 'N/A'}</p>\n<p><strong>Notes:</strong> ${data.notes || 'N/A'}</p>\n<hr>\n<p>Please handle this alert manually using the appropriate process.</p>\n</body>\n</html>`;\n\n    results.push({\n      json: {\n        email_number: i + 1,\n        status: 'PGE - MANUAL REVIEW',\n        requires_human_review: true,\n        to: 'memberservices@usan.org',\n        to_name: 'Member Services',\n        cc: [],\n        subject: `\u26a0\ufe0f Manual Attention Required: Ticket #${data.ticket_number} - ${recipient.station_codes.join(', ')}`,\n        body: manualReviewBody,\n        template_used: 'manual_review_pge',\n        station_codes: recipient.station_codes,\n        input_summary: {\n          alert_id: data.alert_id,\n          ticket_number: data.ticket_number,\n          state: data.states.join(', '),\n          issue_type: data.issue_type\n        }\n      }\n    });\n    continue; // Skip normal processing\n  }\n\n  // ============================================\n  // NORMAL EMAIL PROCESSING\n  // (includes \"Other\" which routes to memberservices with normal format)\n  // ============================================\n  const isOtherIssueType = issueTypeRoutesToMemberServices(data.issue_type);\n\n  const firstName = (recipient.rep_name || 'Member Rep').split(' ')[0];\n  const hasRealName = recipient.rep_name && recipient.rep_name.trim() !== '';\n  const subjectFirstName = hasRealName ? recipient.rep_name.split(' ')[0] : '';\n\n  const templates = {\n    no_response_ca: `\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n${firstName},\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nPlease review the form below and reach out to the customer listed to resolve the issue.\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt; background-color: #FFFF00; padding: 5px;\">\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP) as required by California Code 4216\n(<a href=\"https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?lawCode=GOV&division=5.&title=1.&part=&chapter=3.1.&article=2\">link</a>).\n</p>\n<ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n  <li>How to use Electronic Positive Response - <a href=\"https://www.youtube.com/watch?v=c1b6HlX-fx4\">https://www.youtube.com/watch?v=c1b6HlX-fx4</a></li>\n</ul>\n`,\n    no_response_nv: `\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n${firstName},\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nPlease review the form below and reach out to the customer listed to resolve the issue.\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt; background-color: #FFFF00; padding: 5px;\">\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP) as required by NRS 455.\n</p>\n<ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n  <li>How to use Electronic Positive Response - <a href=\"https://www.youtube.com/watch?v=c1b6HlX-fx4\">https://www.youtube.com/watch?v=c1b6HlX-fx4</a></li>\n</ul>\n`,\n    no_response_generic: `\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n${firstName},\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nPlease review the form below and reach out to the customer listed to resolve the issue.\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nPlease monitor the tickets that require Electronic Positive Responses within the Damage Prevention Portal (DPP).\n</p>\n<ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n  <li>How to use Electronic Positive Response - <a href=\"https://www.youtube.com/watch?v=c1b6HlX-fx4\">https://www.youtube.com/watch?v=c1b6HlX-fx4</a></li>\n</ul>\n`,\n    contact_info_issue: `\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n${firstName},\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nPlease review the email below from one of our agents for reference and reach out to the excavator on the ticket to resolve the issue.\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nIf you need to update your Member Contact information within the Damage Prevention Portal, please use the link below to sign in. Then navigate to the station details for your station code (Settings > OneCallAccess).\n</p>\n<ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n  <li><strong>NV DPP Login Page</strong> - <a href=\"https://appsnv.undergroundservicealert.org/pcadmin/Account/Login\">https://appsnv.undergroundservicealert.org/pcadmin/Account/Login</a></li>\n  <li><strong>CA DPP Login Page</strong> - <a href=\"https://appsca.undergroundservicealert.org/pcadmin/Account/Login?returnUrl=%2Fpcadmin%2FOperations\">https://appsca.undergroundservicealert.org/pcadmin/Account/Login</a></li>\n</ul>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nContact Information can be found under Settings - OneCallAccess then clicking on your Station Code.<br>\nThe Member Contact is displayed on each ticket available for the excavator.<br>\nThe Member IT contact is not displayed on the ticket and is meant for the Member Rep.\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">Please let me know if you have any questions.</p>\n`,\n    member_manually_added: `\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nHello ${firstName},\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nPlease review the email below from one of our agents for reference. The station code ${recipient.station_codes.join(', ')} has been manually added to ticket# ${data.ticket_number} at the request of the excavator.\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nIf you need to update your Area of Interest, please visit the Damage Prevention Portal using the link below.\n</p>\n<ul style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n  <li><strong>CA DPP Login Page</strong> - <a href=\"https://appsca.undergroundservicealert.org/pcadmin/Account/Login?returnUrl=%2Fpcadmin%2FOperations\">https://appsca.undergroundservicealert.org/pcadmin/Account/Login</a></li>\n</ul>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nArea of Interest (AOI) can be found under Settings - OneCallAccess and clicking on your Station Code, then clicking on Area of Interest.<br>\nHere is a video that goes into more detail: <a href=\"https://www.youtube.com/watch?v=KZzHnITi-3Q&feature=youtu.be\">How to manage your Area of Interest</a>\n</p>\n`,\n    general: `\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n${firstName},\n</p>\n<p style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\nPlease review the form below and take appropriate action.\n</p>\n`\n  };\n\n  const templateId = template.id;\n  const bodyHtml = templates[templateId] || templates.general;\n\n  const reviewHeader = MANUAL_REVIEW_MODE ? `\n<div style=\"background: #fff3cd; border: 2px solid #ffc107; padding: 15px; margin-bottom: 20px; font-family: Arial, sans-serif;\">\n  <h3 style=\"margin: 0 0 10px 0; color: #856404;\">\ud83d\udccb REVIEW BEFORE FORWARDING</h3>\n  <p style=\"margin: 5px 0;\"><strong>Forward To:</strong> ${recipient.rep_name} &lt;${recipient.rep_email}&gt;</p>\n  <p style=\"margin: 5px 0;\"><strong>CC:</strong> ${CC_RECIPIENTS.join(', ')}</p>\n  <p style=\"margin: 5px 0;\"><strong>Station Code(s):</strong> ${recipient.station_codes.join(', ')}</p>\n  <hr style=\"border: none; border-top: 1px solid #ffc107; margin: 10px 0;\">\n  <p style=\"margin: 0; font-size: 11px; color: #856404;\">Review the email below, then forward to the recipient above.</p>\n</div>\n` : '';\n\n  const fullHtml = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n</head>\n<body style=\"font-family: 'Times New Roman', Times, serif; font-size: 11pt;\">\n${reviewHeader}\n${bodyHtml}\n${SIGNATURE_HTML}\n${forwardedSection}\n</body>\n</html>\n`;\n\n  // Determine where to send\n  let sendTo;\n  if (MANUAL_REVIEW_MODE) {\n    sendTo = REVIEWER_EMAIL;\n  } else if (isOtherIssueType) {\n    if (data.triage_override) {\n      sendTo = data.triage_override.send_to;\n    } else {\n      sendTo = 'memberservices@usan.org';\n    }\n  } else {\n    sendTo = recipient.rep_email;\n  }\n\n  const sendCc = MANUAL_REVIEW_MODE ? [] : CC_RECIPIENTS;\n  const subjectPrefix = MANUAL_REVIEW_MODE ? `[REVIEW] For: ${recipient.rep_name} - ` : (subjectFirstName ? subjectFirstName + ', ' : '');\n\n  let toName;\n  if (MANUAL_REVIEW_MODE) {\n    toName = 'Reviewer';\n  } else if (isOtherIssueType) {\n    if (data.triage_override) {\n      toName = data.triage_override.send_to_name;\n    } else {\n      toName = 'Member Services';\n    }\n  } else {\n    toName = recipient.rep_name;\n  }\n\n  let status;\n  if (MANUAL_REVIEW_MODE) {\n    status = 'PENDING REVIEW';\n  } else if (isOtherIssueType) {\n    if (data.triage_override) {\n      status = 'AI TRIAGE: ' + data.triage_override.classified_issue_type.toUpperCase() + ' -> ' + data.triage_override.send_to;\n    } else {\n      status = 'OTHER - ROUTED TO MEMBERSERVICES';\n    }\n  } else {\n    status = 'AUTO-SEND TO REP';\n  }\n\n  results.push({\n    json: {\n      email_number: i + 1,\n      status: status,\n      to: sendTo,\n      to_name: toName,\n      cc: sendCc,\n      subject: `${subjectPrefix}FW: DPS - Department Alert System Result #${data.alert_id}`,\n      body: fullHtml,\n      body_text: `${firstName},\\n\\nPlease review the form below and reach out to the customer listed to resolve the issue.`,\n      template_used: templateId,\n      station_codes: recipient.station_codes,\n      intended_recipient: {\n        email: recipient.rep_email,\n        name: recipient.rep_name\n      },\n      input_summary: {\n        alert_id: data.alert_id,\n        ticket_number: data.ticket_number,\n        state: data.states.join(', '),\n        issue_type: data.issue_type\n      }\n    }\n  });\n}\n\nreturn results;\n"
+        },
+        "name": "Render Template (Preview)",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3536,
+          208
+        ],
+        "id": "41701f52-7a8d-4b08-ae0f-79567c202744"
+      },
+      {
+        "parameters": {
+          "sendTo": "REDACTED_EMAIL ",
+          "subject": "={{ $json.subject }}",
+          "message": "={{ $json.body }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          3728,
+          -48
+        ],
+        "id": "b93bc385-a063-4643-b8ae-ee74a1a179cc",
+        "name": "Send a message1",
+        "webhookId": "05e6ba7d-f1f2-4421-aaec-ffab3afe4364",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "ParugWxHQoSSiAHM",
+            "name": "Gmail account"
+          }
+        },
+        "disabled": true
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "5b8aa1b8-82a6-4821-93a4-91f299581258",
+                "leftValue": "={{ $json.requires_human_review }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "notExists",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          2512,
+          384
+        ],
+        "id": "bd8b169e-906a-4c7c-badf-311ab59f39cc",
+        "name": "If1"
+      },
+      {
+        "parameters": {
+          "fromEmail": "memberservices@usan.org",
+          "toEmail": "=\t{{ $json.to }}",
+          "ccEmail": "={{ $json.cc.join(', ') }}",
+          "bccEmail": "Christianmolesen@gmail.com",
+          "subject": "={{ $json.subject }}",
+          "text": "=",
+          "html": "={{ $json.body }}"
+        },
+        "type": "n8n-nodes-base.mailgun",
+        "typeVersion": 1,
+        "position": [
+          3760,
+          512
+        ],
+        "id": "897d26ce-047d-481c-aff7-de1f086cf178",
+        "name": "Mailgun",
+        "credentials": {
+          "mailgunApi": {
+            "id": "X5dvEaypRX7iFuUG",
+            "name": "Mailgun account 2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "d3ca1a84-8c6c-429e-8fb7-fe7b5fba029f",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -208,
+          400
+        ],
+        "id": "56cee3dd-b209-4078-94df-7727e5655d3a",
+        "name": "Webhook",
+        "webhookId": "d3ca1a84-8c6c-429e-8fb7-fe7b5fba029f"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Parse Webhook - Extracts data from Formsite webhook\n// Connect this to the Webhook node output\n\nconst webhookData = $input.first().json;\n// Handle both direct items and items nested in body (webhook wrapper)\nconst items = webhookData.items || webhookData.body?.items || [];\n\n// Helper function to find item by ID\nfunction getItemById(id) {\n  return items.find(item => item.id === id || item.id === String(id));\n}\n\n// Helper function to get value from item (handles both direct value and values array)\nfunction getValue(id) {\n  const item = getItemById(id);\n  if (!item) return '';\n\n  // If it has a direct value\n  if (item.value !== undefined) {\n    return item.value;\n  }\n\n  // If it has a values array\n  if (item.values && item.values.length > 0) {\n    return item.values[0].value || '';\n  }\n\n  return '';\n}\n\n// Extract department first - only process Member Services\nconst department = getValue(15);        // \"Member Services\", \"IT\", etc.\n\n// EARLY EXIT: If not Member Services, stop processing\n// Other departments get their normal Formsite emails without automation\nif (!department.toLowerCase().includes('member services')) {\n  return [{\n    json: {\n      _skipped: true,\n      _reason: `Department is \"${department}\" - not Member Services, skipping automation`,\n      department: department\n    }\n  }];\n}\n\n// Extract fields from Formsite\nconst stationCodesRaw = getValue(32);  // \"VACTSTR PGESTK\"\nconst issueType = getValue(16);         // \"No Response\"\nconst stateRaw = getValue(33);          // \"California\"\nconst ticketNumber = getValue(45);      // \"2026012101268\"\nconst customerName = getValue(23);      // Customer name\nconst notes = getValue(6);              // Notes\n\n// Parse station codes from the main field (space, comma, or \"and\" separated)\nconst mainCodes = stationCodesRaw\n  .split(/[\\s,]+|(?:\\s+and\\s+)/i)\n  .map(code => code.trim().toUpperCase())\n  .filter(code => code.length > 0);\n\n// Also extract potential station codes from the notes field\n// Station codes are typically 4-8 uppercase alphanumeric characters\n// Pattern: look for words that look like codes (uppercase, alphanumeric, 3-10 chars)\nfunction extractCodesFromNotes(notesText) {\n  if (!notesText) return [];\n\n  // Split on common separators: comma, space, &, \"and\", periods\n  const words = notesText\n    .split(/[\\s,&.]+|(?:\\s+and\\s+)/i)\n    .map(w => w.trim().toUpperCase())\n    .filter(w => w.length >= 3 && w.length <= 10);\n\n  // Filter to only alphanumeric words that look like station codes\n  // Station codes typically have letters and optionally numbers (e.g., QFRCA3, MEDCTV, PGESJ1)\n  return words.filter(w => /^[A-Z0-9]+$/.test(w) && /[A-Z]/.test(w));\n}\n\nconst notesCodes = extractCodesFromNotes(notes);\n\n// Combine all candidates (field + notes), deduplicated\nconst allCandidates = [...new Set([...mainCodes, ...notesCodes])];\n\n// Validate ALL candidate codes against HubSpot in ONE API call using IN operator.\n// This filters out English words (CUSTOMER, HAS, THREE, etc.) that the loose\n// regex picks up from notes, while keeping real station codes that DPS agents\n// may have typed in the wrong field.\nlet validatedCodes = mainCodes; // Default: trust field codes if validation fails\n\nif (notesCodes.length > 0) {\n  try {\n    const response = await fetch('https://api.hubapi.com/crm/v3/objects/2-35681060/search', {\n      method: 'POST',\n      headers: {\n        'Authorization': 'Bearer pat-na1-YOUR_HUBSPOT_PAT_HERE',\n        'Content-Type': 'application/json'\n      },\n      body: JSON.stringify({\n        filterGroups: [{\n          filters: [{\n            propertyName: 'station_code',\n            operator: 'IN',\n            values: allCandidates\n          }]\n        }],\n        properties: ['station_code'],\n        limit: 100\n      })\n    });\n\n    const data = await response.json();\n    const validHubSpotCodes = (data.results || [])\n      .map(r => r.properties?.station_code?.toUpperCase())\n      .filter(Boolean);\n\n    validatedCodes = [...new Set(validHubSpotCodes)];\n  } catch (err) {\n    // If validation call fails, fall back to field codes only (safe default)\n    validatedCodes = mainCodes;\n  }\n}\n\nconst stationCodes = validatedCodes;\n\n// Parse states (could be multiple)\nconst states = stateRaw\n  .split(/[,\\/]+/)\n  .map(s => s.trim())\n  .filter(s => s.length > 0);\n\n// Generate alert ID from timestamp or use ticket number\nconst alertId = ticketNumber || new Date().getTime().toString();\n\nreturn [{\n  json: {\n    // Main identifiers\n    alert_id: alertId,\n    ticket_number: ticketNumber,\n\n    // Station codes as array (validated against HubSpot)\n    station_codes: stationCodes,\n    member_codes: stationCodes,  // Alias for compatibility\n\n    // Debug: show where codes came from and validation results\n    _codes_from_field: mainCodes,\n    _codes_from_notes: notesCodes,\n    _all_candidates: allCandidates,\n    _validated_codes: validatedCodes,\n\n    // Issue categorization\n    issue_type: issueType,\n\n    // Location\n    states: states,\n\n    // Customer info\n    customer_name: customerName,\n    notes: notes,\n\n    // Department (for debugging)\n    department: department,\n\n    // Metadata\n    source: 'formsite_webhook',\n    received_at: webhookData.date_finish || new Date().toISOString(),\n\n    // Raw data for debugging\n    _raw: webhookData\n  }\n}];\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          272,
+          640
+        ],
+        "id": "e928f49d-817e-4ef7-a766-ff1b8d22de92",
+        "name": "Code in JavaScript"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.hubapi.com/crm/v3/objects/2-35681060/search",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "Bearer pat-na1-YOUR_HUBSPOT_PAT_HERE"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"filterGroups\": [{\n    \"filters\": [{\n      \"propertyName\": \"station_code\",\n      \"operator\": \"EQ\",\n      \"value\": \"{{ $json.station_code }}\"\n    }]\n  }],\n  \"properties\": [\"station_code\", \"station_email\", \"station_contact_name\"],\n  \"limit\": 1\n}",
+          "options": {
+            "timeout": 10000
+          }
+        },
+        "id": "hubspot-station-lookup",
+        "name": "Lookup HubSpot Station",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          928,
+          144
+        ],
+        "onError": "continueRegularOutput",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 5000
+      },
+      {
+        "parameters": {
+          "jsCode": "// Transform HubSpot response to match existing Process Lookup interface\n// With fallback: if station_email is null, follow Member Representative association\nconst items = $input.all();\nconst explodedItems = $('Explode Codes').all();\nconst results = [];\n\nconst HS_TOKEN = 'Bearer pat-na1-YOUR_HUBSPOT_PAT_HERE';\n\nfor (let i = 0; i < items.length; i++) {\n  const hsResponse = items[i].json;\n  const exploded = explodedItems[i]?.json || {};\n  const stationCode = exploded.station_code;\n  const root = exploded.root;\n\n  const station = hsResponse.results?.[0];\n  let rep_email = station?.properties?.station_email || null;\n  let rep_name = station?.properties?.station_contact_name || null;\n  let _lookup_method = rep_email ? 'direct' : 'none';\n\n  // If no direct email, follow the Member Representative association\n  if (!rep_email && station) {\n    try {\n      const assocData = await this.helpers.httpRequest({\n        method: 'GET',\n        url: `https://api.hubapi.com/crm/v4/objects/2-35681060/${station.id}/associations/contacts`,\n        headers: { 'Authorization': HS_TOKEN }\n      });\n\n      const contactId = assocData.results?.[0]?.toObjectId;\n\n      if (contactId) {\n        const contact = await this.helpers.httpRequest({\n          method: 'GET',\n          url: `https://api.hubapi.com/crm/v3/objects/contacts/${contactId}?properties=email,firstname,lastname`,\n          headers: { 'Authorization': HS_TOKEN }\n        });\n\n        rep_email = contact.properties?.email || null;\n        rep_name = `${contact.properties?.firstname || ''} ${contact.properties?.lastname || ''}`.trim() || null;\n        _lookup_method = rep_email ? 'association' : 'association_no_email';\n      } else {\n        _lookup_method = 'no_association_found';\n      }\n    } catch (err) {\n      _lookup_method = `error: ${err.message}`;\n    }\n  }\n\n  results.push({\n    json: {\n      station_code: stationCode,\n      found: !!rep_email,\n      rep_email: rep_email,\n      rep_name: rep_name,\n      _lookup_method: _lookup_method,\n      root: root\n    }\n  });\n}\n\nreturn results;\n"
+        },
+        "id": "transform-hubspot-response",
+        "name": "Transform HubSpot Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1120,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": false,
+              "leftValue": "",
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "is-other-condition",
+                "leftValue": "={{ $json.issue_type }}",
+                "rightValue": "Other",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "is-other-if-node",
+        "name": "Is Other?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          2624,
+          384
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// Claude Triage - CLASSIFICATION ONLY (routing handled in code)\nconst ANTHROPIC_API_KEY = 'sk-ant-api03-YOUR_ANTHROPIC_KEY_HERE';\n\nconst systemPrompt = `You are an email triage assistant for USA North 811 (USAN) Member Services.\n\nYou analyze DPS (Department Alert System) alerts that came in with issue type \"Other\" and determine the REAL issue category.\n\nBACKGROUND: USAN is a one-call center (811 service). Excavators call before they dig, tickets are generated, and member utilities must respond by locating/marking their underground lines. DPS agents categorize incoming alerts but sometimes select \"Other\" when the issue doesn't fit neatly or when they're unsure.\n\nCLASSIFY into one of these categories:\n\n- \"no_response\": Excavator reports the utility hasn't responded to a locate ticket. Urgent - excavator can't dig until lines are marked.\n  EXAMPLES: \"3rd attempt to get in touch with utility\", \"no response\", \"utility hasn't marked\", \"can't reach member\"\n\n- \"contact_info_issue\": Wrong phone/email on file for the member.\n  EXAMPLES: \"phone number is disconnected\", \"wrong number\", \"can't reach contact\"\n\n- \"member_manually_added\": Station code was manually added to a ticket.\n  EXAMPLES: \"manually added to ticket\", \"no members generated for area\"\n\n- \"locator_complaint\": Excavator complaining about locator behavior or work quality.\n  EXAMPLES: \"locator is unwilling to mark\", \"falsely stating no delineations\", \"wants supervisor\"\n\n- \"aoi_mapping_issue\": Member receiving wrong tickets or wants Area of Interest adjusted.\n  EXAMPLES: \"receiving non-related tickets\", \"decrease work radius\", \"wrong area\"\n\n- \"ticket_delivery_issue\": Member didn't receive a ticket or ticket not showing in system.\n  EXAMPLES: \"could not locate ticket\", \"didn't receive ticket\"\n\n- \"system_status_issue\": Portal/system issues like inactive status, DPP problems, positive response failures.\n  EXAMPLES: \"shows inactive\", \"issues providing positive response\", \"not populating in dropdown\"\n\n- \"general\": Relevant to the member but doesn't fit above categories.\n\nOUTPUT FORMAT (respond with ONLY this JSON, no markdown):\n{\n  \"classified_issue_type\": \"<category from above>\",\n  \"confidence\": \"high|medium|low\",\n  \"reasoning\": \"Brief explanation of classification\",\n  \"inferred_company\": null\n}\n\nIMPORTANT: If the station code is \"N/A\", missing, or invalid (like \"001\"), try to identify the company/utility from the notes and put it in \"inferred_company\". Do NOT include routing decisions - just classify.`;\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const data = item.json;\n  // In live workflow, each item is one recipient from Explode Recipients\n  \n  const stationCodesStr = (data.station_codes || []).join(', ');\n  const statesStr = (data.states || []).join(', ');\n  const repName = data.current_recipient?.rep_name || 'Unknown';\n  const repEmail = data.current_recipient?.rep_email || 'Unknown';\n\n  const userMessage = `Classify this DPS alert:\n\n- Alert ID: ${data.alert_id}\n- Ticket Number: ${data.ticket_number}\n- Station Code(s): ${stationCodesStr}\n- State: ${statesStr}\n- Original Issue Type: Other\n- Customer Name: ${data.customer_name || 'N/A'}\n- Notes: ${data.notes || 'N/A'}\n\nMember Rep on file: ${repName} (${repEmail})`;\n\n  const requestBody = JSON.stringify({\n    model: 'claude-haiku-4-5-20251001',\n    max_tokens: 512,\n    system: systemPrompt,\n    messages: [\n      { role: 'user', content: userMessage }\n    ]\n  });\n\n  try {\n    const response = await this.helpers.httpRequest({\n      method: 'POST',\n      url: 'https://api.anthropic.com/v1/messages',\n      headers: {\n        'x-api-key': ANTHROPIC_API_KEY,\n        'anthropic-version': '2023-06-01',\n        'content-type': 'application/json'\n      },\n      body: requestBody,\n      timeout: 30000\n    });\n\n    results.push({\n      json: {\n        ...data,\n        claude_raw_response: response.content[0].text,\n        claude_model: response.model,\n        claude_usage: response.usage,\n        _prompt_sent: userMessage\n      }\n    });\n  } catch (err) {\n    results.push({\n      json: {\n        ...data,\n        claude_error: err.message,\n        claude_raw_response: null,\n        _fallback: true,\n        _prompt_sent: userMessage\n      }\n    });\n  }\n}\n\nreturn results;"
+        },
+        "id": "claude-triage-live",
+        "name": "Claude Triage",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2848,
+          560
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// Apply Triage Decision - DETERMINISTIC ROUTING RULES\nconst HS_TOKEN = 'Bearer pat-na1-YOUR_HUBSPOT_PAT_HERE';\nconst results = [];\n\n// ===== ROUTING RULES (edit these, not the AI prompt) =====\nconst ROUTE_TO_REP = ['no_response', 'contact_info_issue', 'member_manually_added', 'general'];\nconst ROUTE_TO_MEMBERSERVICES = ['locator_complaint', 'aoi_mapping_issue', 'ticket_delivery_issue'];\n// system_status_issue: route to rep (member needs DPP help from their rep)\n// PGE* station codes: always manual_review\n// N/A or missing station: always memberservices\n// ==========================================================\n\nfor (const item of $input.all()) {\n  const data = item.json;\n\n  // Handle API failure \u2014 safe fallback\n  if (data._fallback || !data.claude_raw_response) {\n    results.push({\n      json: {\n        ...data,\n        triage_decision: {\n          classified_issue_type: 'unknown',\n          confidence: 'none',\n          reasoning: `Claude API failed: ${data.claude_error || 'No response'}`,\n          fallback: true\n        },\n        routing_rule: 'fallback',\n        final_routing: {\n          send_to: 'memberservices@usan.org',\n          send_to_name: 'Member Services',\n          cc: [],\n          template: 'general',\n          is_fallback: true\n        },\n        triage_override: {\n          send_to: 'memberservices@usan.org',\n          send_to_name: 'Member Services',\n          cc: [],\n          classified_issue_type: 'unknown',\n          confidence: 'none',\n          reasoning: 'AI triage failed - fallback to memberservices',\n          is_fallback: true,\n          requires_human_review: false\n        }\n      }\n    });\n    continue;\n  }\n\n  // Parse Claude's classification\n  let triage;\n  try {\n    let rawText = data.claude_raw_response.trim();\n    if (rawText.startsWith('```')) {\n      rawText = rawText.replace(/^```(?:json)?\\n?/, '').replace(/\\n?```$/, '').trim();\n    }\n    triage = JSON.parse(rawText);\n  } catch (err) {\n    results.push({\n      json: {\n        ...data,\n        triage_decision: {\n          classified_issue_type: 'parse_error',\n          confidence: 'none',\n          reasoning: `Failed to parse: ${err.message}`,\n          raw_response: data.claude_raw_response,\n          fallback: true\n        },\n        routing_rule: 'fallback',\n        final_routing: {\n          send_to: 'memberservices@usan.org',\n          send_to_name: 'Member Services',\n          cc: [],\n          template: 'general',\n          is_fallback: true\n        },\n        triage_override: {\n          send_to: 'memberservices@usan.org',\n          send_to_name: 'Member Services',\n          cc: [],\n          classified_issue_type: 'unknown',\n          confidence: 'none',\n          reasoning: 'AI triage failed - fallback to memberservices',\n          is_fallback: true,\n          requires_human_review: false\n        }\n      }\n    });\n    continue;\n  }\n\n  const classification = triage.classified_issue_type;\n  const stationCodes = data.station_codes || [];\n  const recipient = data.current_recipient || {};\n\n  // ===== DETERMINISTIC ROUTING LOGIC =====\n\n  let routeTo;\n  let routingRule;\n\n  // Rule 1: PGE station codes \u2192 always manual_review\n  const hasPGE = stationCodes.some(c => (c || '').toUpperCase().startsWith('PGE'));\n  if (hasPGE) {\n    routeTo = 'manual_review';\n    routingRule = 'pge_manual_review';\n  }\n  // Rule 2: N/A or missing station \u2192 memberservices (can't identify rep)\n  else if (stationCodes.length === 0 || stationCodes.every(c => !c || c === 'N/A' || c === '001')) {\n    routeTo = 'memberservices';\n    routingRule = 'no_valid_station';\n  }\n  // Rule 3: Classification-based routing\n  else if (ROUTE_TO_REP.includes(classification)) {\n    routeTo = 'rep';\n    routingRule = 'classification_to_rep';\n  }\n  else if (ROUTE_TO_MEMBERSERVICES.includes(classification)) {\n    routeTo = 'memberservices';\n    routingRule = 'classification_to_memberservices';\n  }\n  // Rule 4: system_status_issue \u2192 rep (member needs DPP help)\n  else if (classification === 'system_status_issue') {\n    routeTo = 'rep';\n    routingRule = 'system_status_to_rep';\n  }\n  // Rule 5: Unknown classification \u2192 memberservices\n  else {\n    routeTo = 'memberservices';\n    routingRule = 'unknown_classification_fallback';\n  }\n\n  // ===== BUILD FINAL ROUTING =====\n\n  let finalRouting;\n  let inferredLookup = null;\n\n  // If routing to rep but we need to infer the company\n  if (routeTo === 'rep' && triage.inferred_company && !recipient.rep_email) {\n    try {\n      const searchResponse = await this.helpers.httpRequest({\n        method: 'POST',\n        url: 'https://api.hubapi.com/crm/v3/objects/2-35681060/search',\n        headers: { 'Authorization': HS_TOKEN, 'Content-Type': 'application/json' },\n        body: JSON.stringify({\n          filterGroups: [{\n            filters: [{\n              propertyName: 'station_code',\n              operator: 'CONTAINS_TOKEN',\n              value: triage.inferred_company.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10)\n            }]\n          }],\n          properties: ['station_code', 'station_email', 'station_contact_name'],\n          limit: 5\n        })\n      });\n      if (searchResponse.results && searchResponse.results.length > 0) {\n        const station = searchResponse.results[0];\n        inferredLookup = {\n          found: true,\n          station_code: station.properties?.station_code,\n          rep_email: station.properties?.station_email,\n          rep_name: station.properties?.station_contact_name\n        };\n      } else {\n        inferredLookup = { found: false, searched_for: triage.inferred_company };\n        routeTo = 'memberservices';\n        routingRule += '_inferred_not_found';\n      }\n    } catch (err) {\n      inferredLookup = { found: false, error: err.message };\n      routeTo = 'memberservices';\n      routingRule += '_lookup_error';\n    }\n  }\n\n  switch (routeTo) {\n    case 'rep': {\n      const repEmail = inferredLookup?.rep_email || recipient.rep_email;\n      const repName = inferredLookup?.rep_name || recipient.rep_name;\n      finalRouting = {\n        send_to: repEmail || 'memberservices@usan.org',\n        send_to_name: repName || 'Member Services',\n        cc: triage.confidence === 'low' ? ['memberservices@usan.org'] : [],\n        template: classification,\n        is_fallback: !repEmail\n      };\n      break;\n    }\n    case 'manual_review':\n      finalRouting = {\n        send_to: 'memberservices@usan.org',\n        send_to_name: 'Member Services',\n        cc: [],\n        template: 'manual_review',\n        requires_human_review: true,\n        is_fallback: false\n      };\n      break;\n    default:\n      finalRouting = {\n        send_to: 'memberservices@usan.org',\n        send_to_name: 'Member Services',\n        cc: [],\n        template: classification,\n        is_fallback: false\n      };\n  }\n\n  // Set triage_override for Render Template to use\n  results.push({\n    json: {\n      ...data,\n      triage_decision: triage,\n      routing_rule: routingRule,\n      inferred_lookup: inferredLookup,\n      final_routing: finalRouting,\n      triage_override: {\n        send_to: finalRouting.send_to,\n        send_to_name: finalRouting.send_to_name,\n        cc: finalRouting.cc || [],\n        classified_issue_type: triage.classified_issue_type,\n        confidence: triage.confidence,\n        reasoning: triage.reasoning,\n        is_fallback: finalRouting.is_fallback || false,\n        requires_human_review: finalRouting.requires_human_review || false\n      }\n    }\n  });\n}\n\nreturn results;"
+        },
+        "id": "apply-triage-live",
+        "name": "Apply Triage Decision",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3072,
+          560
+        ]
+      }
+    ],
+    "connections": {
+      "Test Input Form": {
+        "main": [
+          [
+            {
+              "node": "Parse Test Input",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parse Test Input": {
+        "main": [
+          [
+            {
+              "node": "Has Codes?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Has Codes?": {
+        "main": [
+          [
+            {
+              "node": "Explode Codes",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "No Codes Exception",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Explode Codes": {
+        "main": [
+          [
+            {
+              "node": "Lookup HubSpot Station",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Process Lookup": {
+        "main": [
+          [
+            {
+              "node": "Aggregate Recipients",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Aggregate Recipients": {
+        "main": [
+          [
+            {
+              "node": "Select Template",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Select Template": {
+        "main": [
+          [
+            {
+              "node": "Has Recipients?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Has Recipients?": {
+        "main": [
+          [
+            {
+              "node": "Explode Recipients",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "All Unmatched Exception",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Explode Recipients": {
+        "main": [
+          [
+            {
+              "node": "If1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Log to Sheet": {
+        "main": [
+          [
+            {
+              "node": "Email Summary",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Email Summary": {
+        "main": [
+          []
+        ]
+      },
+      "Render Template (Preview)": {
+        "main": [
+          [
+            {
+              "node": "Send a message1",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Mailgun",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Send a message1": {
+        "main": [
+          [
+            {
+              "node": "Log to Sheet",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If1": {
+        "main": [
+          [
+            {
+              "node": "Is Other?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "Mailgun": {
+        "main": [
+          [
+            {
+              "node": "Log to Sheet",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Code in JavaScript",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code in JavaScript": {
+        "main": [
+          [
+            {
+              "node": "Has Codes?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "No Codes Exception": {
+        "main": [
+          []
+        ]
+      },
+      "Lookup HubSpot Station": {
+        "main": [
+          [
+            {
+              "node": "Transform HubSpot Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Transform HubSpot Response": {
+        "main": [
+          [
+            {
+              "node": "Process Lookup",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is Other?": {
+        "main": [
+          [
+            {
+              "node": "Claude Triage",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Render Template (Preview)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Claude Triage": {
+        "main": [
+          [
+            {
+              "node": "Apply Triage Decision",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Apply Triage Decision": {
+        "main": [
+          [
+            {
+              "node": "Render Template (Preview)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "christian olesen",
+    "name": null,
+    "description": null
+  }
 }
