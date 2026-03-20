@@ -155,11 +155,8 @@ curl -X POST "https://n8n.usan.org/api/v1/workflows" \
 
 ## Rep Details for Signatures
 
-| Rep | Email | Phone | Calendly |
-|-----|-------|-------|----------|
-| Christian Olesen | christian.olesen@usan.org | REDACTED_PHONE | calendly.com/christian-olesen-usan/30min |
-| Germain Suess | germain.suess@usan.org | REDACTED_PHONE | calendly.com/germain-usan/yearly-membership-review |
-| Trevor Harris | trevor.harris@usan.org | REDACTED_PHONE | calendly.com/trevor-harris-kr8/yearly-membership-review |
+Rep contact details (phone, Calendly links) are stored in the n8n workflow configuration.
+Do not commit personal contact info to this repo.
 
 ## Google Sheet Structure
 

@@ -1,7 +1,7 @@
 {
   "parameters": {
-    "fromEmail": "REDACTED_EMAIL",
-    "toEmail": "REDACTED_EMAIL",
+    "fromEmail": "YOUR_TEST_EMAIL_HERE",
+    "toEmail": "YOUR_TEST_EMAIL_HERE",
     "subject": "={{ $json.subject }}",
     "text": "={{ $json.body }}",
     "options": {

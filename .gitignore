@@ -24,3 +24,11 @@ logs/
 # Temporary files
 *.tmp
 *.temp
+
+# Images (may contain PII)
+*.jpg
+*.jpeg
+*.png
+
+# Sensitive scripts
+scripts/deploy_workflow.ps1

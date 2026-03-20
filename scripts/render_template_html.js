@@ -58,12 +58,12 @@ const SIGNATURE_HTML = `
       <img src="${LOGO_URL}" alt="USAN 811" width="175" style="max-width: 175px;">
     </td>
     <td style="padding-left: 15px; vertical-align: top;">
-      <p style="margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;"><b>Christian Olesen</b></p>
+      <p style="margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;"><b>${repName || 'Member Services'}</b></p>
       <p style="margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;">Member Services Specialist</p>
-      <p style="margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;">REDACTED_PHONE</p>
+      <p style="margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;">${repPhone || ''}</p>
       <p style="margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;"><a href="http://www.undergroundservicealert.org/" style="color: #0563c1;">undergroundservicealert.org</a></p>
       <p style="margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;">4005 Port Chicago Hwy #100 Concord, CA 94520</p>
-      <p style="margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;"><a href="https://calendly.com/christian-olesen-usan/30min" style="color: #4c94d8;"><b>Christian's Availability</b></a></p>
+      <p style="margin: 0; font-family: 'Aptos Display', Aptos, sans-serif; font-size: 12pt;"><a href="${repCalendly || '#'}" style="color: #4c94d8;"><b>Schedule a Meeting</b></a></p>
     </td>
   </tr>
 </table>
@@ -111,10 +111,11 @@ for (let i = 0; i < allItems.length; i++) {
 
   if (hasATTDNORCAL) {
     // Utiliquest team recipients
-    const utiliquestTo = 'REDACTED_EMAIL';
+    // Utiliquest contacts - configure via environment or n8n credentials
+    const utiliquestTo = data.utiliquest_primary || 'CONFIGURE_UTILIQUEST_PRIMARY';
     const utiliquestCcReal = [
-      'REDACTED_EMAIL',
-      'REDACTED_EMAIL',
+      data.utiliquest_cc1 || 'CONFIGURE_UTILIQUEST_CC1',
+      data.utiliquest_cc2 || 'CONFIGURE_UTILIQUEST_CC2',
       ...CC_RECIPIENTS
     ];
 
@@ -122,8 +123,8 @@ for (let i = 0; i < allItems.length; i++) {
     const attReviewHeader = MANUAL_REVIEW_MODE ? `
 <div style="background: #d4edda; border: 2px solid #28a745; padding: 15px; margin-bottom: 20px; font-family: Arial, sans-serif;">
   <h3 style="margin: 0 0 10px 0; color: #155724;">📋 ATTDNORCAL - REVIEW BEFORE SENDING</h3>
-  <p style="margin: 5px 0;"><strong>Send To:</strong> Shant Simonian &lt;REDACTED_EMAIL&gt;</p>
-  <p style="margin: 5px 0;"><strong>CC:</strong> REDACTED_EMAIL, REDACTED_EMAIL, ${CC_RECIPIENTS.join(', ')}</p>
+  <p style="margin: 5px 0;"><strong>Send To:</strong> Shant Simonian &lt;shant.simonian@utiliquest.com&gt;</p>
+  <p style="margin: 5px 0;"><strong>CC:</strong> eduardo.mercado@utiliquest.com, dawn.crawford@utiliquest.com, ${CC_RECIPIENTS.join(', ')}</p>
   <p style="margin: 5px 0;"><strong>Station Code(s):</strong> ${recipient.station_codes.join(', ')}</p>
   <hr style="border: none; border-top: 1px solid #28a745; margin: 10px 0;">
   <p style="margin: 0; font-size: 11px; color: #155724;">Review the email below, then forward to Utiliquest team.</p>
